@@ -16,10 +16,11 @@ export default {
   editSuccess: 'Successful',
   modify: 'Modify',
   modifySuccess: 'Successful',
+  add: 'Add',
+  addSuccess: 'Successful',
   cancel: 'Cancel',
   confirm: 'OK',
   tip: 'Tips',
-  add: 'Add',
   refresh: 'Refresh',
   search: 'Search',
   clear: 'Clear',
@@ -35,6 +36,7 @@ export default {
   private: 'Private',
   paramSetting: 'Parameter Settings',
   creator: 'Creator',
+  author: 'Author',
   debug: 'Debug',
   required: 'Required',
   noData: 'No data',
@@ -52,10 +54,12 @@ export default {
   },
   param: {
     outputParam: 'Output Parameters',
-    inputParam: 'Input Parameters'
+    inputParam: 'Input Parameters',
+    initParam: 'Startup Parameters',
   },
 
   inputPlaceholder: 'Please input',
   title: 'Title',
-  content: 'Content'
+  content: 'Content',
+  rename: 'Rename'
 }

@@ -14,19 +14,60 @@
         label-position="top"
         require-asterisk-position="right"
         v-loading="loading"
+        @submit.prevent
       >
         <el-form-item
           :label="$t('views.functionLib.functionForm.form.functionName.label')"
           prop="name"
         >
-          <el-input
-            v-model="form.name"
-            :placeholder="$t('views.functionLib.functionForm.form.functionName.placeholder')"
-            maxlength="64"
-            show-word-limit
-            @blur="form.name = form.name?.trim()"
-          />
+          <div class="flex w-full">
+            <div
+              v-if="form.id"
+              class="edit-avatar mr-12"
+              @mouseenter="showEditIcon = true"
+              @mouseleave="showEditIcon = false"
+            >
+              <AppAvatar
+                v-if="isAppIcon(form.icon)"
+                :id="form.id"
+                shape="square"
+                :size="32"
+                style="background: none"
+              >
+                <img :src="String(form.icon)" alt="" />
+              </AppAvatar>
+              <AppAvatar
+                v-else-if="form.name"
+                :id="form.id"
+                :name="form.name"
+                pinyinColor
+                shape="square"
+                :size="32"
+              />
+              <AppAvatar
+                v-if="showEditIcon"
+                :id="form.id"
+                shape="square"
+                class="edit-mask"
+                :size="32"
+                @click="openEditAvatar"
+              >
+                <el-icon><EditPen /></el-icon>
+              </AppAvatar>
+            </div>
+            <AppAvatar shape="square" style="background: #34c724" class="mr-12" v-else>
+              <img src="@/assets/icon_function_outlined.svg" style="width: 75%" alt="" />
+            </AppAvatar>
+            <el-input
+              v-model="form.name"
+              :placeholder="$t('views.functionLib.functionForm.form.functionName.placeholder')"
+              maxlength="64"
+              show-word-limit
+              @blur="form.name = form.name?.trim()"
+            />
+          </div>
         </el-form-item>
+
         <el-form-item :label="$t('views.functionLib.functionForm.form.functionDescription.label')">
           <el-input
             v-model="form.desc"
@@ -38,6 +79,7 @@
             @blur="form.desc = form.desc?.trim()"
           />
         </el-form-item>
+        <!--
         <el-form-item prop="permission_type">
           <template #label>
             <span>{{ $t('views.functionLib.functionForm.form.permission_type.label') }}</span>
@@ -64,7 +106,76 @@
             </el-row>
           </el-radio-group>
         </el-form-item>
+        -->
       </el-form>
+      <div class="flex-between">
+        <h4 class="title-decoration-1 mb-16">
+          {{ $t('common.param.initParam') }}
+        </h4>
+        <el-button link type="primary" @click="openAddInitDialog()">
+          <el-icon class="mr-4"><Plus /></el-icon> {{ $t('common.add') }}
+        </el-button>
+      </div>
+      <el-table ref="initFieldTableRef" :data="form.init_field_list" class="mb-16">
+        <el-table-column prop="field" :label="$t('dynamicsForm.paramForm.field.label')">
+          <template #default="{ row }">
+            <span :title="row.field" class="ellipsis-1">{{ row.field }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column :label="$t('dynamicsForm.paramForm.input_type.label')">
+          <template #default="{ row }">
+            <el-tag type="info" class="info-tag" v-if="row.input_type === 'TextInput'">{{
+              $t('dynamicsForm.input_type_list.TextInput')
+            }}</el-tag>
+            <el-tag type="info" class="info-tag" v-if="row.input_type === 'PasswordInput'">{{
+              $t('dynamicsForm.input_type_list.PasswordInput')
+            }}</el-tag>
+            <el-tag type="info" class="info-tag" v-if="row.input_type === 'Slider'">{{
+              $t('dynamicsForm.input_type_list.Slider')
+            }}</el-tag>
+            <el-tag type="info" class="info-tag" v-if="row.input_type === 'SwitchInput'">{{
+              $t('dynamicsForm.input_type_list.SwitchInput')
+            }}</el-tag>
+            <el-tag type="info" class="info-tag" v-if="row.input_type === 'SingleSelect'">{{
+              $t('dynamicsForm.input_type_list.SingleSelect')
+            }}</el-tag>
+            <el-tag type="info" class="info-tag" v-if="row.input_type === 'MultiSelect'">{{
+              $t('dynamicsForm.input_type_list.MultiSelect')
+            }}</el-tag>
+            <el-tag type="info" class="info-tag" v-if="row.input_type === 'RadioCard'">{{
+              $t('dynamicsForm.input_type_list.RadioCard')
+            }}</el-tag>
+            <el-tag type="info" class="info-tag" v-if="row.input_type === 'DatePicker'">{{
+              $t('dynamicsForm.input_type_list.DatePicker')
+            }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column :label="$t('common.required')">
+          <template #default="{ row }">
+            <div @click.stop>
+              <el-switch disabled size="small" v-model="row.required" />
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column :label="$t('common.operation')" align="left" width="90">
+          <template #default="{ row, $index }">
+            <span class="mr-4">
+              <el-tooltip effect="dark" :content="$t('common.modify')" placement="top">
+                <el-button type="primary" text @click.stop="openAddInitDialog(row, $index)">
+                  <el-icon><EditPen /></el-icon>
+                </el-button>
+              </el-tooltip>
+            </span>
+            <el-tooltip effect="dark" :content="$t('common.delete')" placement="top">
+              <el-button type="primary" text @click="deleteInitField($index)">
+                <el-icon>
+                  <Delete />
+                </el-icon>
+              </el-button>
+            </el-tooltip>
+          </template>
+        </el-table-column>
+      </el-table>
       <div class="flex-between">
         <h4 class="title-decoration-1 mb-16">
           {{ $t('common.param.inputParam') }}
@@ -77,7 +188,7 @@
         </el-button>
       </div>
 
-      <el-table :data="form.input_field_list" class="mb-16">
+      <el-table ref="inputFieldTableRef" :data="form.input_field_list" class="mb-16">
         <el-table-column
           prop="name"
           :label="$t('views.functionLib.functionForm.form.paramName.label')"
@@ -127,18 +238,18 @@
       </el-table>
       <h4 class="title-decoration-1 mb-16">
         {{ $t('views.functionLib.functionForm.form.param.code') }}
+        <span style="color: red; margin-left: -10px">*</span>
         <el-text type="info" class="color-secondary">
           {{ $t('views.functionLib.functionForm.form.param.paramInfo2') }}
         </el-text>
       </h4>
 
-      <div class="function-CodemirrorEditor mb-8" v-if="showEditor">
-        <CodemirrorEditor v-model="form.code" />
-        <div class="function-CodemirrorEditor__footer">
-          <el-button text type="info" @click="openCodemirrorDialog" class="magnify">
-            <AppIcon iconName="app-magnify" style="font-size: 16px"></AppIcon>
-          </el-button>
-        </div>
+      <div class="mb-8" v-if="showEditor">
+        <CodemirrorEditor
+          :title="$t('views.functionLib.functionForm.form.param.code')"
+          v-model="form.code"
+          @submitDialog="submitCodemirrorEditor"
+        />
       </div>
       <h4 class="title-decoration-1 mb-16 mt-16">
         {{ $t('common.param.outputParam') }}
@@ -161,34 +272,15 @@
       </div>
     </template>
 
-    <!-- Codemirror 弹出层 -->
-    <el-dialog
-      v-model="dialogVisible"
-      :title="$t('views.functionLib.functionForm.form.param.code')"
-      append-to-body
-      fullscreen
-    >
-      <CodemirrorEditor
-        v-model="cloneContent"
-        style="
-          height: calc(100vh - 160px) !important;
-          border: 1px solid #bbbfc4;
-          border-radius: 4px;
-        "
-      />
-      <template #footer>
-        <div class="dialog-footer mt-24">
-          <el-button type="primary" @click="submitDialog"> {{ $t('common.confirm') }}</el-button>
-        </div>
-      </template>
-    </el-dialog>
     <FunctionDebugDrawer ref="FunctionDebugDrawerRef" />
     <FieldFormDialog ref="FieldFormDialogRef" @refresh="refreshFieldList" />
+    <UserFieldFormDialog ref="UserFieldFormDialogRef" @refresh="refreshInitFieldList" />
+    <EditAvatarDialog ref="EditAvatarDialogRef" @refresh="refreshFunctionLib" />
   </el-drawer>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, nextTick } from 'vue'
 import FieldFormDialog from './FieldFormDialog.vue'
 import FunctionDebugDrawer from './FunctionDebugDrawer.vue'
 import type { functionLibData } from '@/api/type/function-lib'
@@ -198,6 +290,11 @@ import { MsgSuccess, MsgConfirm } from '@/utils/message'
 import { cloneDeep } from 'lodash'
 import { PermissionType, PermissionDesc } from '@/enums/model'
 import { t } from '@/locales'
+import UserFieldFormDialog from '@/workflow/nodes/base-node/component/UserFieldFormDialog.vue'
+import { isAppIcon } from '@/utils/application'
+import EditAvatarDialog from './EditAvatarDialog.vue'
+import Sortable from 'sortablejs'
+
 const props = defineProps({
   title: String
 })
@@ -205,6 +302,10 @@ const props = defineProps({
 const emit = defineEmits(['refresh'])
 const FieldFormDialogRef = ref()
 const FunctionDebugDrawerRef = ref()
+const UserFieldFormDialogRef = ref()
+const EditAvatarDialogRef = ref()
+const initFieldTableRef = ref()
+const inputFieldTableRef = ref()
 
 const FormRef = ref()
 
@@ -213,17 +314,17 @@ const loading = ref(false)
 const visible = ref(false)
 const showEditor = ref(false)
 const currentIndex = ref<any>(null)
+const showEditIcon = ref(false)
 
 const form = ref<functionLibData>({
   name: '',
   desc: '',
   code: '',
+  icon: '',
   input_field_list: [],
+  init_field_list: [],
   permission_type: 'PRIVATE'
 })
-
-const dialogVisible = ref(false)
-const cloneContent = ref<any>('')
 
 watch(visible, (bool) => {
   if (!bool) {
@@ -234,7 +335,9 @@ watch(visible, (bool) => {
       name: '',
       desc: '',
       code: '',
+      icon: '',
       input_field_list: [],
+      init_field_list: [],
       permission_type: 'PRIVATE'
     }
     FormRef.value?.clearValidate()
@@ -258,14 +361,42 @@ const rules = reactive({
   ]
 })
 
-function openCodemirrorDialog() {
-  cloneContent.value = form.value.code
-  dialogVisible.value = true
+function onDragHandle() {
+  // For init_field_list table
+  if (initFieldTableRef.value) {
+    const el = initFieldTableRef.value.$el.querySelector('.el-table__body-wrapper tbody')
+    Sortable.create(el, {
+      animation: 150,
+      ghostClass: 'sortable-ghost',
+      onEnd: ({ newIndex, oldIndex }) => {
+        if (newIndex === undefined || oldIndex === undefined) return
+        if (newIndex !== oldIndex) {
+          const item = form.value.init_field_list?.splice(oldIndex, 1)[0]
+          form.value.init_field_list?.splice(newIndex, 0, item)
+        }
+      }
+    })
+  }
+
+  // For input_field_list table
+  if (inputFieldTableRef.value) {
+    const el = inputFieldTableRef.value.$el.querySelector('.el-table__body-wrapper tbody')
+    Sortable.create(el, {
+      animation: 150,
+      ghostClass: 'sortable-ghost',
+      onEnd: ({ newIndex, oldIndex }) => {
+        if (newIndex === undefined || oldIndex === undefined) return
+        if (newIndex !== oldIndex) {
+          const item = form.value.input_field_list?.splice(oldIndex, 1)[0]
+          form.value.input_field_list?.splice(newIndex, 0, item)
+        }
+      }
+    })
+  }
 }
 
-function submitDialog() {
-  form.value.code = cloneContent.value
-  dialogVisible.value = false
+function submitCodemirrorEditor(val: string) {
+  form.value.code = val
 }
 
 function close() {
@@ -316,10 +447,42 @@ function refreshFieldList(data: any) {
   currentIndex.value = null
 }
 
+function openAddInitDialog(data?: any, index?: any) {
+  if (typeof index !== 'undefined') {
+    currentIndex.value = index
+  }
+
+  UserFieldFormDialogRef.value.open(data)
+}
+
+function refreshInitFieldList(data: any) {
+  if (currentIndex.value !== null) {
+    form.value.init_field_list?.splice(currentIndex.value, 1, data)
+  } else {
+    form.value.init_field_list?.push(data)
+  }
+  currentIndex.value = null
+  UserFieldFormDialogRef.value.close()
+}
+
+function refreshFunctionLib(data: any) {
+  form.value.icon = data
+  // console.log(data)
+}
+
+function deleteInitField(index: any) {
+  form.value.init_field_list?.splice(index, 1)
+}
+
+function openEditAvatar() {
+  EditAvatarDialogRef.value.open(form.value)
+}
+
 const submit = async (formEl: FormInstance | undefined) => {
   if (!formEl) return
   await formEl.validate((valid: any) => {
     if (valid) {
+      // console.log(form.value)
       if (isEdit.value) {
         functionLibApi.putFunctionLib(form.value?.id as string, form.value, loading).then((res) => {
           MsgSuccess(t('common.editSuccess'))
@@ -352,13 +515,4 @@ defineExpose({
   open
 })
 </script>
-<style lang="scss" scoped>
-.function-CodemirrorEditor__footer {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-}
-.function-CodemirrorEditor {
-  position: relative;
-}
-</style>
+<style lang="scss" scoped></style>

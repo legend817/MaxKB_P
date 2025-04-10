@@ -146,10 +146,9 @@
           <template #label>
             <div class="flex align-center">
               <div class="mr-4">
-                <span
-                  >{{ $t('views.applicationWorkflow.nodes.aiChatNode.returnContent.label')
-                  }}<span class="danger">*</span></span
-                >
+                <span>{{
+                  $t('views.applicationWorkflow.nodes.aiChatNode.returnContent.label')
+                }}</span>
               </div>
               <el-tooltip effect="dark" placement="right" popper-class="max-w-200">
                 <template #content>
@@ -167,7 +166,7 @@
 </template>
 
 <script setup lang="ts">
-import { set, groupBy, create } from 'lodash'
+import { set, groupBy, create, cloneDeep } from 'lodash'
 import { app } from '@/main'
 import NodeContainer from '@/workflow/common/NodeContainer.vue'
 import { ref, computed, onMounted, onActivated } from 'vue'
@@ -225,13 +224,20 @@ const update_field = () => {
   applicationApi
     .getApplicationById(id, props.nodeModel.properties.node_data.application_id)
     .then((ok) => {
-      const old_api_input_field_list = props.nodeModel.properties.node_data.api_input_field_list
-      const old_user_input_field_list = props.nodeModel.properties.node_data.user_input_field_list
+      const old_api_input_field_list = cloneDeep(
+        props.nodeModel.properties.node_data.api_input_field_list
+      )
+      const old_user_input_field_list = cloneDeep(
+        props.nodeModel.properties.node_data.user_input_field_list
+      )
       if (isWorkFlow(ok.data.type)) {
         const nodeData = ok.data.work_flow.nodes[0].properties.node_data
-        const new_api_input_field_list = ok.data.work_flow.nodes[0].properties.api_input_field_list
-        const new_user_input_field_list =
+        const new_api_input_field_list = cloneDeep(
+          ok.data.work_flow.nodes[0].properties.api_input_field_list
+        )
+        const new_user_input_field_list = cloneDeep(
           ok.data.work_flow.nodes[0].properties.user_input_field_list
+        )
         const merge_api_input_field_list = new_api_input_field_list.map((item: any) => {
           const find_field = old_api_input_field_list.find(
             (old_item: any) => old_item.variable == item.variable
@@ -288,7 +294,7 @@ const update_field = () => {
       }
     })
     .catch((err) => {
-      // set(props.nodeModel.properties, 'status', 500)
+      set(props.nodeModel.properties, 'status', 500)
     })
 }
 

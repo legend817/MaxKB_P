@@ -1,5 +1,6 @@
 export default {
   node: '節點',
+  nodeName: '節點名稱',
   baseComponent: '基礎組件',
   nodeSetting: '節點設置',
   workflow: '工作流',
@@ -19,7 +20,9 @@ export default {
     autoSave: '自動保存',
     latestRelease: '最近發布',
     copyParam: '複製參數',
-    debug: '調試'
+    debug: '調試',
+    exit: '直接退出',
+    exitSave: '保存並退出'
   },
   tip: {
     publicSuccess: '發布成功',
@@ -33,7 +36,8 @@ export default {
     repeatedNodeError: '節點名稱已存在！',
     cannotCopy: '不能被複製',
     copyError: '已複製節點',
-    paramErrorMessage: '參數已存在: '
+    paramErrorMessage: '參數已存在: ',
+    saveMessage: '當前修改未保存，是否保存後退出？'
   },
   delete: {
     confirmTitle: '確定刪除該節點？',
@@ -48,12 +52,13 @@ export default {
     beautify: '一鍵美化'
   },
   variable: {
+    label: '變量',
     global: '全局變量',
     Referencing: '引用變量',
     ReferencingRequired: '引用變量必填',
     ReferencingError: '引用變量錯誤',
     NoReferencing: '不存在的引用變量',
-    fieldMessage: '請選擇變量'
+    placeholder: '請選擇變量'
   },
   condition: {
     title: '執行條件',
@@ -114,7 +119,7 @@ export default {
                   如果你想讓用戶看到該節點的輸出內容，請打開開關。`
       },
       defaultPrompt: '已知信息',
-      think: '思考過程',
+      think: '思考過程'
     },
     searchDatasetNode: {
       label: '知識庫檢索',
@@ -210,6 +215,22 @@ export default {
         requiredMessage: '請選擇圖片'
       }
     },
+    variableAssignNode: {
+      label: '變數賦值',
+      text: '更新全域變數的值',
+      assign: '賦值'
+    },
+    mcpNode: {
+      label: 'MCP 調用',
+      text: '透過SSE方式執行MCP服務中的工具',
+      getToolsSuccess: '獲取工具成功',
+      getTool: '獲取工具',
+      tool: '工具',
+      toolParam: '工具變數',
+      mcpServerTip: '請輸入JSON格式的MCP服務器配置',
+      mcpToolTip: '請選擇工具',
+      configLabel: 'MCP Server Config (僅支持SSE調用方式)'
+    },
     imageGenerateNode: {
       label: '圖片生成',
       text: '根據提供的文本內容生成圖片',
@@ -271,7 +292,9 @@ export default {
     len_ge: '長度大於等於',
     len_gt: '長度大於',
     len_le: '長度小於等於',
-    len_lt: '長度小於'
+    len_lt: '長度小於',
+    is_true: '為真',
+    is_not_true: '不為真'
   },
   FileUploadSetting: {}
 }

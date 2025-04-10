@@ -10,13 +10,18 @@ from langchain_core.outputs import ChatGenerationChunk, ChatGeneration
 from langchain_core.runnables import RunnableConfig, ensure_config
 from langchain_core.utils.pydantic import is_basemodel_subclass
 from langchain_openai import ChatOpenAI
-from langchain_openai.chat_models.base import _convert_chunk_to_generation_chunk
 
 from common.config.tokenizer_manage_config import TokenizerManage
 
 
+def custom_get_token_ids(text: str):
+    tokenizer = TokenizerManage.get_tokenizer()
+    return tokenizer.encode(text)
+
+
 class BaseChatOpenAI(ChatOpenAI):
     usage_metadata: dict = {}
+    custom_get_token_ids = custom_get_token_ids
 
     def get_last_generation_info(self) -> Optional[Dict[str, Any]]:
         return self.usage_metadata
@@ -46,7 +51,8 @@ class BaseChatOpenAI(ChatOpenAI):
             run_manager: Optional[CallbackManagerForLLMRun] = None,
             **kwargs: Any,
     ) -> Iterator[ChatGenerationChunk]:
-
+        kwargs["stream"] = True
+        kwargs["stream_options"] = {"include_usage": True}
         """Set default stream_options."""
         stream_usage = self._should_stream_usage(kwargs.get('stream_usage'), **kwargs)
         # Note: stream_options is not a valid parameter for Azure OpenAI.
@@ -57,7 +63,6 @@ class BaseChatOpenAI(ChatOpenAI):
         if stream_usage:
             kwargs["stream_options"] = {"include_usage": stream_usage}
 
-        kwargs["stream"] = True
         payload = self._get_request_payload(messages, stop=stop, **kwargs)
         default_chunk_class: Type[BaseMessageChunk] = AIMessageChunk
         base_generation_info = {}
@@ -92,7 +97,7 @@ class BaseChatOpenAI(ChatOpenAI):
                 if not isinstance(chunk, dict):
                     chunk = chunk.model_dump()
 
-                generation_chunk = _convert_chunk_to_generation_chunk(
+                generation_chunk = super()._convert_chunk_to_generation_chunk(
                     chunk,
                     default_chunk_class,
                     base_generation_info if is_first_chunk else {},
@@ -100,9 +105,6 @@ class BaseChatOpenAI(ChatOpenAI):
                 if generation_chunk is None:
                     continue
 
-                # custom code
-                if generation_chunk.message.usage_metadata is not None:
-                    self.usage_metadata = generation_chunk.message.usage_metadata
                 # custom code
                 if len(chunk['choices']) > 0 and 'reasoning_content' in chunk['choices'][0]['delta']:
                     generation_chunk.message.additional_kwargs["reasoning_content"] = chunk['choices'][0]['delta'][
@@ -115,6 +117,9 @@ class BaseChatOpenAI(ChatOpenAI):
                         generation_chunk.text, chunk=generation_chunk, logprobs=logprobs
                     )
                 is_first_chunk = False
+                # custom code
+                if generation_chunk.message.usage_metadata is not None:
+                    self.usage_metadata = generation_chunk.message.usage_metadata
                 yield generation_chunk
 
     def _create_chat_result(self,

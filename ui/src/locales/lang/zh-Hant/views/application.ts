@@ -28,18 +28,22 @@ export default {
     },
     form: {
       appName: {
-        label: '應用名稱',
+        label: '名稱',
         placeholder: '請輸入應用名稱',
         requiredMessage: '請輸入應用名稱'
       },
       appDescription: {
-        label: '應用描述',
+        label: '描述',
         placeholder: '描述該應用的應用場景及用途，如：XXX 小助手回答用戶提出的 XXX 產品使用問題'
       },
       appType: {
-        label: '選擇應用類型',
+        label: '類型',
         simplePlaceholder: '適合新手建立小助手',
         workflowPlaceholder: '適合高階用戶自訂小助手的工作流程'
+      },
+      appTemplate: {
+        blankApp: '空白應用',
+        assistantApp: '知識庫問答助手'
       },
       aiModel: {
         label: 'AI 模型',
@@ -55,8 +59,8 @@ export default {
         references: ' (引用知識庫)',
         placeholder: '請輸入提示詞',
         requiredMessage: '請輸入提示詞',
-        tooltip:'透過調整提示詞內容，可以引導大模型對話方向，該提示詞會被固定在上下文的開頭。',
-        
+        tooltip: '透過調整提示詞內容，可以引導大模型對話方向，該提示詞會被固定在上下文的開頭。',
+
         noReferencesTooltip:
           '透過調整提示詞內容，可以引導大模型對話方向，該提示詞會被固定在上下文的開頭。可以使用變數：{question} 是用戶提出問題的佔位符。',
         referencesTooltip:
@@ -100,9 +104,9 @@ export default {
       },
       reasoningContent: {
         label: '輸出思考',
-        tooltip:'請根據模型返回的思考標簽設置，標簽中間的內容將會認定爲思考過程',
+        tooltip: '請根據模型返回的思考標簽設置，標簽中間的內容將會認定爲思考過程',
         start: '開始',
-        end: '結束',
+        end: '結束'
       }
     },
     buttons: {
@@ -149,6 +153,8 @@ export default {
     wechatTip: '打造公眾號智慧應用',
     lark: '飛書應用',
     larkTip: '打造飛書智慧應用',
+    slack: 'Slack',
+    slackTip: '打造 Slack 智慧應用',
     setting: '配置',
     callback: '回呼位址',
     callbackTip: '請輸入回呼位址',
@@ -190,7 +196,13 @@ export default {
       appIdPlaceholder: '請輸入App ID',
       appSecretPlaceholder: '請輸入App Secret',
       verificationTokenPlaceholder: '請輸入Verification Token',
-      urlInfo: '-事件與回呼-事件配置-配置訂閱方式的 "請求位址" 中'
+      urlInfo: '-事件與回呼-事件配置-配置訂閱方式的 "請求位址" 中',
+      folderTokenPlaceholder: '請輸入Folder Token'
+    },
+    slackSetting: {
+      title: 'Slack 應用配置',
+      signingSecretPlaceholder: '請輸入 Signing Secret',
+      botUserTokenPlaceholder: '請輸入 Bot User Token'
     },
     copyUrl: '複製連結填入到'
   },

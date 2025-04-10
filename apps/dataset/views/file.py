@@ -14,6 +14,7 @@ from rest_framework.views import APIView
 from rest_framework.views import Request
 
 from common.auth import TokenAuth
+from common.log.log import log
 from common.response import result
 from dataset.serializers.file_serializers import FileSerializer
 from django.utils.translation import gettext_lazy as _
@@ -32,6 +33,7 @@ class FileView(APIView):
                                                               required=True,
                                                               description=_('Upload file'))],
                          tags=[_('file')])
+    @log(menu='file', operate='Upload file')
     def post(self, request: Request):
         return result.success(FileSerializer(data={'file': request.FILES.get('file')}).upload())
 

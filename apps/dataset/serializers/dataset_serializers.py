@@ -23,6 +23,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.core import validators
 from django.db import transaction, models
 from django.db.models import QuerySet
+from django.db.models.functions import Reverse, Substr
 from django.http import HttpResponse
 from drf_yasg import openapi
 from rest_framework import serializers
@@ -42,9 +43,10 @@ from common.util.split_model import get_split_model
 from dataset.models.data_set import DataSet, Document, Paragraph, Problem, Type, ProblemParagraphMapping, TaskType, \
     State, File, Image
 from dataset.serializers.common_serializers import list_paragraph, MetaSerializer, ProblemParagraphManage, \
-    get_embedding_model_by_dataset_id, get_embedding_model_id_by_dataset_id, write_image, zip_dir
+    get_embedding_model_by_dataset_id, get_embedding_model_id_by_dataset_id, write_image, zip_dir, \
+    GenerateRelatedSerializer
 from dataset.serializers.document_serializers import DocumentSerializers, DocumentInstanceSerializer
-from dataset.task import sync_web_dataset, sync_replace_web_dataset
+from dataset.task import sync_web_dataset, sync_replace_web_dataset, generate_related_by_dataset_id
 from embedding.models import SearchMode
 from embedding.task import embedding_by_dataset, delete_embedding_by_dataset
 from setting.models import AuthOperate, Model
@@ -450,11 +452,13 @@ class DataSetSerializers(serializers.ModelSerializer):
             # 批量插入关联问题
             QuerySet(ProblemParagraphMapping).bulk_create(problem_paragraph_mapping_list) if len(
                 problem_paragraph_mapping_list) > 0 else None
-
             # 响应数据
             return {**DataSetSerializers(dataset).data,
-                'document_list': DocumentSerializers.Query(data={'dataset_id': dataset_id}).list(
-                    with_valid=True)}, dataset_id
+                    'user_id': user_id,
+                    'document_list': document_model_list,
+                    "document_count": len(document_model_list),
+                    "char_length": reduce(lambda x, y: x + y, [d.char_length for d in document_model_list],
+                                           0)}, dataset_id
 
         @staticmethod
         def get_last_url_path(url):
@@ -564,13 +568,13 @@ class DataSetSerializers(serializers.ModelSerializer):
         id = serializers.CharField(required=True, error_messages=ErrMessage.char("id"))
         user_id = serializers.UUIDField(required=False, error_messages=ErrMessage.char(_('user id')))
         query_text = serializers.CharField(required=True, error_messages=ErrMessage.char(_('query text')))
-        top_number = serializers.IntegerField(required=True, max_value=100, min_value=1,
+        top_number = serializers.IntegerField(required=True, max_value=10000, min_value=1,
                                               error_messages=ErrMessage.char("top number"))
         similarity = serializers.FloatField(required=True, max_value=2, min_value=0,
                                             error_messages=ErrMessage.char(_('similarity')))
         search_mode = serializers.CharField(required=True, validators=[
             validators.RegexValidator(regex=re.compile("^embedding|keywords|blend$"),
-                                      message=_('The type only supports register|reset_password'), code=500)
+                                      message=_('The type only supports embedding|keywords|blend'), code=500)
         ], error_messages=ErrMessage.char(_('search mode')))
 
         def is_valid(self, *, raise_exception=True):
@@ -808,6 +812,31 @@ class DataSetSerializers(serializers.ModelSerializer):
             embedding_model_id = get_embedding_model_id_by_dataset_id(self.data.get('id'))
             try:
                 embedding_by_dataset.delay(dataset_id, embedding_model_id)
+            except AlreadyQueued as e:
+                raise AppApiException(500, _('Failed to send the vectorization task, please try again later!'))
+
+        def generate_related(self, instance: Dict, with_valid=True):
+            if with_valid:
+                self.is_valid(raise_exception=True)
+                GenerateRelatedSerializer(data=instance).is_valid(raise_exception=True)
+            dataset_id = self.data.get('id')
+            model_id = instance.get("model_id")
+            prompt = instance.get("prompt")
+            state_list = instance.get('state_list')
+            ListenerManagement.update_status(QuerySet(Document).filter(dataset_id=dataset_id),
+                                             TaskType.GENERATE_PROBLEM,
+                                             State.PENDING)
+            ListenerManagement.update_status(QuerySet(Paragraph).annotate(
+                reversed_status=Reverse('status'),
+                task_type_status=Substr('reversed_status', TaskType.GENERATE_PROBLEM.value,
+                                        1),
+            ).filter(task_type_status__in=state_list, dataset_id=dataset_id)
+                                             .values('id'),
+                                             TaskType.GENERATE_PROBLEM,
+                                             State.PENDING)
+            ListenerManagement.get_aggregation_document_status_by_dataset_id(dataset_id)()
+            try:
+                generate_related_by_dataset_id.delay(dataset_id, model_id, prompt, state_list)
             except AlreadyQueued as e:
                 raise AppApiException(500, _('Failed to send the vectorization task, please try again later!'))
 

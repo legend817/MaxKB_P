@@ -1,5 +1,6 @@
 import { type Dict } from '@/api/type/common'
 import { type Ref } from 'vue'
+import bus from '@/bus'
 interface ApplicationFormType {
   name?: string
   desc?: string
@@ -144,8 +145,8 @@ export class ChatRecordManage {
         })
       }
     }
-
     this.chat.answer_text = this.chat.answer_text + chunk_answer
+    bus.emit('change:answer', { record_id: this.chat.record_id, is_end: false })
   }
   get_current_up_node(run_node: any) {
     const index = this.node_list.findIndex((item) => item == run_node)
@@ -158,12 +159,15 @@ export class ChatRecordManage {
   get_run_node() {
     if (
       this.write_node_info &&
-      (this.write_node_info.current_node.buffer.length > 0 ||
+      (this.write_node_info.current_node.reasoning_content_buffer.length > 0 ||
+        this.write_node_info.current_node.buffer.length > 0 ||
         !this.write_node_info.current_node.is_end)
     ) {
       return this.write_node_info
     }
-    const run_node = this.node_list.filter((item) => item.buffer.length > 0 || !item.is_end)[0]
+    const run_node = this.node_list.filter(
+      (item) => item.reasoning_content_buffer.length > 0 || item.buffer.length > 0 || !item.is_end
+    )[0]
 
     if (run_node) {
       const index = this.node_list.indexOf(run_node)
@@ -229,6 +233,7 @@ export class ChatRecordManage {
     if (this.loading) {
       this.loading.value = false
     }
+    bus.emit('change:answer', { record_id: this.chat.record_id, is_end: true })
     if (this.id) {
       clearInterval(this.id)
     }
@@ -244,7 +249,10 @@ export class ChatRecordManage {
   write() {
     this.chat.is_stop = false
     this.is_stop = false
-    this.is_close = false
+    if (!this.is_close) {
+      this.is_close = false
+    }
+
     this.write_ed = false
     this.chat.write_ed = false
     if (this.loading) {
@@ -432,6 +440,12 @@ export class ChatManagement {
     const chatRecord = this.chatMessageContainer[chatRecordId]
     if (chatRecord) {
       chatRecord.write()
+    }
+  }
+  static open(chatRecordId: string) {
+    const chatRecord = this.chatMessageContainer[chatRecordId]
+    if (chatRecord) {
+      chatRecord.open()
     }
   }
   /**

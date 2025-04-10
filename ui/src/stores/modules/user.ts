@@ -13,7 +13,7 @@ export interface userStateTypes {
   userInfo: User | null
   token: any
   version?: string
-  accessToken?: string
+  userAccessToken?: string
   XPACK_LICENSE_IS_VALID: false
   isXPack: false
   themeInfo: any
@@ -26,6 +26,7 @@ const useUserStore = defineStore({
     userInfo: null,
     token: '',
     version: '',
+    userAccessToken: '',
     XPACK_LICENSE_IS_VALID: false,
     isXPack: false,
     themeInfo: null
@@ -60,11 +61,15 @@ const useUserStore = defineStore({
       return this.userType === 1 ? localStorage.getItem('token') : this.getAccessToken()
     },
     getAccessToken() {
-      const accessToken = sessionStorage.getItem('accessToken')
-      if (accessToken) {
-        return accessToken
+      const token = sessionStorage.getItem(`${this.userAccessToken}-accessToken`)
+      if (token) {
+        return token
       }
-      return localStorage.getItem('accessToken')
+      const local_token = localStorage.getItem(`${token}-accessToken`)
+      if (local_token) {
+        return local_token
+      }
+      return localStorage.getItem(`accessToken`)
     },
 
     getPermissions() {
@@ -83,8 +88,9 @@ const useUserStore = defineStore({
         return ''
       }
     },
-    changeUserType(num: number) {
+    changeUserType(num: number, token?: string) {
       this.userType = num
+      this.userAccessToken = token
     },
 
     async asyncGetProfile() {
@@ -143,8 +149,22 @@ const useUserStore = defineStore({
         return this.profile()
       })
     },
+    async dingOauth2Callback(code: string) {
+      return UserApi.getDingOauth2Callback(code).then((ok) => {
+        this.token = ok.data
+        localStorage.setItem('token', ok.data)
+        return this.profile()
+      })
+    },
     async wecomCallback(code: string) {
       return UserApi.getWecomCallback(code).then((ok) => {
+        this.token = ok.data
+        localStorage.setItem('token', ok.data)
+        return this.profile()
+      })
+    },
+    async larkCallback(code: string) {
+      return UserApi.getlarkCallback(code).then((ok) => {
         this.token = ok.data
         localStorage.setItem('token', ok.data)
         return this.profile()
@@ -164,6 +184,11 @@ const useUserStore = defineStore({
     },
     async getQrType() {
       return UserApi.getQrType().then((ok) => {
+        return ok.data
+      })
+    },
+    async getQrSource() {
+      return UserApi.getQrSource().then((ok) => {
         return ok.data
       })
     },

@@ -5,16 +5,30 @@
       <el-icon class="mr-4">
         <Plus />
       </el-icon>
-    {{$t('common.add')}}
+      {{ $t('common.add') }}
     </el-button>
   </div>
   <el-table
     v-if="props.nodeModel.properties.api_input_field_list?.length > 0"
     :data="props.nodeModel.properties.api_input_field_list"
     class="mb-16"
+    ref="tableRef"
+    row-key="field"
   >
-    <el-table-column prop="variable" :label="$t('dynamicsForm.paramForm.field.label')" />
-    <el-table-column prop="default_value" :label="$t('dynamicsForm.default.label')" />
+    <el-table-column prop="variable" :label="$t('dynamicsForm.paramForm.field.label')">
+      <template #default="{ row }">
+        <span class="ellipsis-1" :title="row.variable">
+          {{ row.variable }}
+        </span>
+      </template>
+    </el-table-column>
+    <el-table-column prop="default_value" :label="$t('dynamicsForm.default.label')">
+      <template #default="{ row }">
+        <span class="ellipsis-1" :title="row.default_value">
+          {{ row.default_value }}
+        </span>
+      </template>
+    </el-table-column>
     <el-table-column :label="$t('common.required')">
       <template #default="{ row }">
         <div @click.stop>
@@ -48,11 +62,13 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { set } from 'lodash'
+import Sortable from 'sortablejs'
 import ApiFieldFormDialog from './ApiFieldFormDialog.vue'
 import { MsgError } from '@/utils/message'
 import { t } from '@/locales'
-const props = defineProps<{ nodeModel: any }>()
 
+const props = defineProps<{ nodeModel: any }>()
+const tableRef = ref()
 const currentIndex = ref(null)
 const ApiFieldFormDialogRef = ref()
 const inputFieldList = ref<any[]>([])
@@ -67,6 +83,7 @@ function openAddDialog(data?: any, index?: any) {
 function deleteField(index: any) {
   inputFieldList.value.splice(index, 1)
   props.nodeModel.graphModel.eventCenter.emit('refreshFieldList')
+  onDragHandle()
 }
 
 function refreshFieldList(data: any) {
@@ -92,6 +109,31 @@ function refreshFieldList(data: any) {
   currentIndex.value = null
   ApiFieldFormDialogRef.value.close()
   props.nodeModel.graphModel.eventCenter.emit('refreshFieldList')
+  onDragHandle()
+}
+
+// 表格排序拖拽
+function onDragHandle() {
+  if (!tableRef.value) return
+
+  // 获取表格的 tbody DOM 元素
+  const wrapper = tableRef.value.$el as HTMLElement
+  const tbody = wrapper.querySelector('.el-table__body-wrapper tbody')
+  if (!tbody) return
+  // 初始化 Sortable
+  Sortable.create(tbody as HTMLElement, {
+    animation: 150,
+    ghostClass: 'ghost-row',
+    onEnd: (evt) => {
+      if (evt.oldIndex === undefined || evt.newIndex === undefined) return
+      // 更新数据顺序
+      const items = [...inputFieldList.value]
+      const [movedItem] = items.splice(evt.oldIndex, 1)
+      items.splice(evt.newIndex, 0, movedItem)
+      inputFieldList.value = items
+      props.nodeModel.graphModel.eventCenter.emit('refreshFieldList')
+    }
+  })
 }
 
 onMounted(() => {

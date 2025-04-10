@@ -50,6 +50,8 @@
               $t('views.applicationWorkflow.nodes.imageUnderstandNode.model.requiredMessage')
             "
             :options="modelOptions"
+            showFooter
+            :model-type="'IMAGE'"
           ></ModelSelect>
         </el-form-item>
 
@@ -149,7 +151,7 @@
               <div class="mr-4">
                 <span
                   >{{ $t('views.applicationWorkflow.nodes.aiChatNode.returnContent.label')
-                  }}<span class="danger">*</span></span
+                  }}</span
                 >
               </div>
               <el-tooltip effect="dark" placement="right" popper-class="max-w-200">

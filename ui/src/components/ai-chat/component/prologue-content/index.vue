@@ -1,12 +1,18 @@
 <template>
   <!-- 开场白组件 -->
   <div class="item-content mb-16">
-    <div class="avatar" v-if="prologue">
-      <img v-if="application.avatar" :src="application.avatar" height="32px" width="32px" />
-      <LogoIcon v-else height="32px" width="32px" />
+    <div class="avatar mr-8" v-if="prologue && showAvatar">
+      <img v-if="application.avatar" :src="application.avatar" height="28px" width="28px" />
+      <LogoIcon v-else height="28px" width="28px" />
     </div>
-    <div class="content" v-if="prologue">
-      <el-card shadow="always" class="dialog-card" style="--el-card-padding: 10px 16px 12px">
+    <div
+      class="content"
+      v-if="prologue"
+      :style="{
+        'padding-right': showUserAvatar ? 'var(--padding-left)' : '0'
+      }"
+    >
+      <el-card shadow="always" class="border-r-8" style="--el-card-padding: 10px 16px 12px">
         <MdRenderer
           :source="prologue"
           :send-message="sendMessage"
@@ -21,12 +27,23 @@ import { type chatType } from '@/api/type/application'
 import { computed } from 'vue'
 import MdRenderer from '@/components/markdown/MdRenderer.vue'
 import { t } from '@/locales'
+import useStore from '@/stores'
 const props = defineProps<{
   application: any
   available: boolean
   type: 'log' | 'ai-chat' | 'debug-ai-chat'
   sendMessage: (question: string, other_params_data?: any, chat?: chatType) => void
 }>()
+
+const { user } = useStore()
+
+const showAvatar = computed(() => {
+  return user.isEnterprise() ? props.application.show_avatar : true
+})
+const showUserAvatar = computed(() => {
+  return user.isEnterprise() ? props.application.show_user_avatar : true
+})
+
 const toQuickQuestion = (match: string, offset: number, input: string) => {
   return `<quick_question>${match.replace('- ', '')}</quick_question>`
 }

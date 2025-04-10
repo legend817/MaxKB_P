@@ -1,6 +1,7 @@
 export default {
   input_type_list: {
     TextInput: '文本框',
+    PasswordInput: '密码框',
     Slider: '滑块',
     SwitchInput: '开关',
     SingleSelect: '单选框',

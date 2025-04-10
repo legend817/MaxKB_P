@@ -31,7 +31,7 @@ class FunctionExecutor:
             self.user = None
         self._createdir()
         if self.sandbox:
-            os.system(f"chown -R {self.user}:{self.user} {self.sandbox_path}")
+            os.system(f"chown -R {self.user}:root {self.sandbox_path}")
 
     def _createdir(self):
         old_mask = os.umask(0o077)
@@ -88,7 +88,7 @@ except Exception as e:
             os.system(f"chown {self.user}:{self.user} {exec_python_file}")
         kwargs = {'cwd': BASE_DIR}
         subprocess_result = subprocess.run(
-            ['su', '-c', python_directory + ' ' + exec_python_file, self.user],
+            ['su', '-s', python_directory, '-c', "exec(open('" + exec_python_file + "').read())", self.user],
             text=True,
             capture_output=True, **kwargs)
         os.remove(exec_python_file)

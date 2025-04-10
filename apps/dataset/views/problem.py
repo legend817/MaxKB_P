@@ -13,11 +13,14 @@ from rest_framework.views import Request
 
 from common.auth import TokenAuth, has_permissions
 from common.constants.permission_constants import Permission, Group, Operate
+from common.log.log import log
 from common.response import result
 from common.util.common import query_params_to_single_dict
 from dataset.serializers.problem_serializers import ProblemSerializers
 from dataset.swagger_api.problem_api import ProblemApi
 from django.utils.translation import gettext_lazy as _
+
+from dataset.views import get_dataset_operation_object
 
 
 class Problem(APIView):
@@ -49,6 +52,9 @@ class Problem(APIView):
     @has_permissions(
         lambda r, k: Permission(group=Group.DATASET, operate=Operate.MANAGE,
                                 dynamic_tag=k.get('dataset_id')))
+    @log(menu='problem', operate='Create question',
+         get_operation_object=lambda r, keywords: get_dataset_operation_object(keywords.get('dataset_id'))
+         )
     def post(self, request: Request, dataset_id: str):
         return result.success(
             ProblemSerializers.Create(
@@ -85,6 +91,8 @@ class Problem(APIView):
         @has_permissions(
             lambda r, k: Permission(group=Group.DATASET, operate=Operate.MANAGE,
                                     dynamic_tag=k.get('dataset_id')))
+        @log(menu='problem', operate='Batch deletion issues',
+             get_operation_object=lambda r, keywords: get_dataset_operation_object(keywords.get('dataset_id')))
         def delete(self, request: Request, dataset_id: str):
             return result.success(
                 ProblemSerializers.BatchOperate(data={'dataset_id': dataset_id}).delete(request.data))
@@ -99,6 +107,8 @@ class Problem(APIView):
         @has_permissions(
             lambda r, k: Permission(group=Group.DATASET, operate=Operate.MANAGE,
                                     dynamic_tag=k.get('dataset_id')))
+        @log(menu='problem', operate='Batch associated paragraphs',
+             get_operation_object=lambda r, keywords: get_dataset_operation_object(keywords.get('dataset_id')))
         def post(self, request: Request, dataset_id: str):
             return result.success(
                 ProblemSerializers.BatchOperate(data={'dataset_id': dataset_id}).association(request.data))
@@ -115,6 +125,8 @@ class Problem(APIView):
         @has_permissions(
             lambda r, k: Permission(group=Group.DATASET, operate=Operate.MANAGE,
                                     dynamic_tag=k.get('dataset_id')))
+        @log(menu='problem', operate='Delete question',
+             get_operation_object=lambda r, keywords: get_dataset_operation_object(keywords.get('dataset_id')))
         def delete(self, request: Request, dataset_id: str, problem_id: str):
             return result.success(ProblemSerializers.Operate(
                 data={**query_params_to_single_dict(request.query_params), 'dataset_id': dataset_id,
@@ -130,6 +142,8 @@ class Problem(APIView):
         @has_permissions(
             lambda r, k: Permission(group=Group.DATASET, operate=Operate.MANAGE,
                                     dynamic_tag=k.get('dataset_id')))
+        @log(menu='problem', operate='Modify question',
+             get_operation_object=lambda r, keywords: get_dataset_operation_object(keywords.get('dataset_id')))
         def put(self, request: Request, dataset_id: str, problem_id: str):
             return result.success(ProblemSerializers.Operate(
                 data={**query_params_to_single_dict(request.query_params), 'dataset_id': dataset_id,

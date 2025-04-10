@@ -9,6 +9,7 @@ export default {
   userInput: '用户输入',
   quote: '引用',
   download: '点击下载文件',
+  transcribing: '转文字中',
   passwordValidator: {
     title: '请输入密码打开链接',
     errorMessage1: '密码不能为空',
@@ -23,9 +24,9 @@ export default {
     oppose: '反对',
     cancelOppose: '取消反对',
     continue: '继续',
-    stopChat: '停止回答'
+    stopChat: '停止回答',
+    startChat: '开始对话'
   },
-
   tip: {
     error500Message: '抱歉，当前正在维护，无法提供服务，请稍后再试！',
     errorIdentifyMessage: '无法识别用户身份',
@@ -48,7 +49,7 @@ export default {
   inputPlaceholder: {
     speaking: '说话中',
     recorderLoading: '转文字中',
-    default: '请输入问题，Ctrl+Enter 换行，Enter发送'
+    default: '请输入问题'
   },
   uploadFile: {
     label: '上传文件',
@@ -91,5 +92,6 @@ export default {
     title: '知识库引用',
     question: '用户问题',
     optimizationQuestion: '优化后问题'
-  }
+  },
+  editTitle: '编辑标题'
 }

@@ -49,6 +49,7 @@
             :options="modelOptions"
             @submitModel="getModel"
             showFooter
+            :model-type="'LLM'"
           ></ModelSelect>
         </el-form-item>
         <el-form-item :label="$t('views.application.applicationForm.form.roleSettings.label')">
@@ -114,7 +115,7 @@
               <div class="mr-4">
                 <span
                   >{{ $t('views.applicationWorkflow.nodes.aiChatNode.returnContent.label')
-                  }}<span class="danger">*</span></span
+                  }}</span
                 >
               </div>
               <el-tooltip effect="dark" placement="right" popper-class="max-w-200">

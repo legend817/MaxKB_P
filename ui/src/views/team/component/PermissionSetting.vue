@@ -19,14 +19,41 @@
         <template #default="{ row }">
           <div class="flex align-center">
             <AppAvatar
-              v-if="isApplication"
-              :name="row.name"
-              pinyinColor
+              v-if="isApplication && isAppIcon(row?.icon)"
+              style="background: none"
               class="mr-12"
               shape="square"
               :size="24"
+            >
+              <img :src="row?.icon" alt="" />
+            </AppAvatar>
+
+            <AppAvatar
+              v-else-if="row?.name && isApplication"
+              :name="row?.name"
+              pinyinColor
+              shape="square"
+              :size="24"
+              class="mr-12"
             />
-            <AppAvatar v-else-if="isDataset" class="mr-12 avatar-blue" shape="square" :size="24">
+            <AppAvatar
+              v-if="row.icon === '1' && isDataset"
+              class="mr-8 avatar-purple"
+              shape="square"
+              :size="24"
+            >
+              <img src="@/assets/icon_web.svg" style="width: 58%" alt="" />
+            </AppAvatar>
+            <AppAvatar
+              v-else-if="row.icon === '2' && isDataset"
+              class="mr-8 avatar-purple"
+              shape="square"
+              :size="24"
+              style="background: none"
+            >
+              <img src="@/assets/logo_lark.svg" style="width: 100%" alt="" />
+            </AppAvatar>
+            <AppAvatar v-else-if="isDataset" class="mr-8 avatar-blue" shape="square" :size="24">
               <img src="@/assets/icon_document.svg" style="width: 58%" alt="" />
             </AppAvatar>
             <auto-tooltip :content="row?.name">
@@ -57,7 +84,12 @@
           />
         </template>
       </el-table-column>
-      <el-table-column :label="$t('views.team.setting.check')"  align="center" width="100" fixed="right">
+      <el-table-column
+        :label="$t('views.team.setting.check')"
+        align="center"
+        width="100"
+        fixed="right"
+      >
         <template #header>
           <el-checkbox
             :disabled="props.manage"
@@ -80,6 +112,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
 import { TeamEnum } from '@/enums/team'
+import { isAppIcon } from '@/utils/application'
 
 const props = defineProps({
   data: {
@@ -135,7 +168,9 @@ const allChecked: any = ref({
 
 const filterText = ref('')
 
-const filterData = computed(() => props.data.filter((v: any) => v.name.includes(filterText.value)))
+const filterData = computed(() =>
+  props.data.filter((v: any) => v.name.toLowerCase().includes(filterText.value.toLowerCase()))
+)
 
 const allIndeterminate: any = ref({
   [TeamEnum.MANAGE]: computed(() => {
@@ -167,4 +202,4 @@ function checkedOperateChange(Name: string | number, row: any, e: boolean) {
   })
 }
 </script>
-<style lang="scss" scope></style>
+<style lang="scss" scoped></style>

@@ -2,9 +2,7 @@
   <div class="application-workflow" v-loading="loading">
     <div class="header border-b flex-between p-12-24">
       <div class="flex align-center">
-        <back-button
-          @click="router.push({ path: `/application/${id}/WORK_FLOW/overview` })"
-        ></back-button>
+        <back-button @click="back"></back-button>
         <h4>{{ detail?.name }}</h4>
         <div v-if="showHistory && disablePublic">
           <el-text type="info" class="ml-16 color-secondary"
@@ -138,17 +136,19 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, computed, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import type { Action } from 'element-plus'
 import Workflow from '@/workflow/index.vue'
 import DropdownMenu from '@/views/application-workflow/component/DropdownMenu.vue'
 import PublishHistory from '@/views/application-workflow/component/PublishHistory.vue'
 import applicationApi from '@/api/application'
 import { isAppIcon } from '@/utils/application'
-import { MsgSuccess, MsgError } from '@/utils/message'
+import { MsgSuccess, MsgError, MsgConfirm } from '@/utils/message'
 import { datetimeFormat } from '@/utils/time'
 import useStore from '@/stores'
 import { WorkFlowInstance } from '@/workflow/common/validate'
 import { hasPermission } from '@/utils/permission'
 import { t } from '@/locales'
+
 const { user, application } = useStore()
 const router = useRouter()
 const route = useRoute()
@@ -174,7 +174,26 @@ const isSave = ref(false)
 const showHistory = ref(false)
 const disablePublic = ref(false)
 const currentVersion = ref<any>({})
+const cloneWorkFlow = ref(null)
 
+function back() {
+  if (JSON.stringify(cloneWorkFlow.value) !== JSON.stringify(getGraphData())) {
+    MsgConfirm(t('common.tip'), t('views.applicationWorkflow.tip.saveMessage'), {
+      confirmButtonText: t('views.applicationWorkflow.setting.exitSave'),
+      cancelButtonText: t('views.applicationWorkflow.setting.exit'),
+      type: 'warning',
+      distinguishCancelAndClose: true
+    })
+      .then(() => {
+        saveApplication(true, true)
+      })
+      .catch((action: Action) => {
+        action === 'cancel' && router.push({ path: `/application/${id}/WORK_FLOW/overview` })
+      })
+  } else {
+    router.push({ path: `/application/${id}/WORK_FLOW/overview` })
+  }
+}
 function clickoutsideHistory() {
   if (!disablePublic.value) {
     showHistory.value = false
@@ -251,7 +270,7 @@ async function publicHandle() {
       const obj = {
         work_flow: getGraphData()
       }
-      await application.asyncPutApplication(id, obj)
+      await application.asyncPutApplication(id, obj, loading)
       const workflow = new WorkFlowInstance(obj.work_flow)
       try {
         workflow.is_valid()
@@ -260,7 +279,11 @@ async function publicHandle() {
         return
       }
       applicationApi.putPublishApplication(id as String, obj, loading).then(() => {
-        MsgSuccess(t('views.applicationWorkflow.tip.publicSuccess'))
+
+        application.asyncGetApplicationDetail(id, loading).then((res: any) => {
+          detail.value.name = res.data.name
+          MsgSuccess(t('views.applicationWorkflow.tip.publicSuccess'))
+        })
       })
     })
     .catch((res: any) => {
@@ -340,23 +363,37 @@ function getDetail() {
     detail.value.tts_model_id = res.data.tts_model
     detail.value.tts_type = res.data.tts_type
     saveTime.value = res.data?.update_time
+    application.asyncGetAccessToken(id, loading).then((res: any) => {
+      detail.value = { ...detail.value, ...res.data }
+    })
     workflowRef.value?.clearGraphData()
     nextTick(() => {
       workflowRef.value?.render(detail.value.work_flow)
+      cloneWorkFlow.value = getGraphData()
     })
   })
 }
 
-function saveApplication(bool?: boolean) {
+function saveApplication(bool?: boolean, back?: boolean) {
   const obj = {
     work_flow: getGraphData()
   }
-  application.asyncPutApplication(id, obj).then((res) => {
-    saveTime.value = new Date()
-    if (bool) {
-      MsgSuccess(t('common.saveSuccess'))
-    }
-  })
+  loading.value = back || false
+  application
+    .asyncPutApplication(id, obj)
+    .then((res) => {
+      saveTime.value = new Date()
+      if (bool) {
+        cloneWorkFlow.value = getGraphData()
+        MsgSuccess(t('common.saveSuccess'))
+        if (back) {
+          router.push({ path: `/application/${id}/WORK_FLOW/overview` })
+        }
+      }
+    })
+    .catch(() => {
+      loading.value = false
+    })
 }
 
 /**

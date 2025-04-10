@@ -67,6 +67,15 @@
                 <img src="@/assets/icon_web.svg" style="width: 58%" alt="" />
               </AppAvatar>
               <AppAvatar
+                v-else-if="!item.dataset_id && item.type === '2'"
+                class="mr-8 avatar-purple"
+                shape="square"
+                :size="24"
+                style="background: none"
+              >
+                <img src="@/assets/logo_lark.svg" style="width: 100%" alt="" />
+              </AppAvatar>
+              <AppAvatar
                 v-else-if="!item.dataset_id && item.type === '0'"
                 class="mr-12 avatar-blue"
                 shape="square"
@@ -295,4 +304,4 @@ const submitForm = async (formEl: FormInstance | undefined) => {
 
 defineExpose({ open })
 </script>
-<style lang="scss" scope></style>
+<style lang="scss" scoped></style>

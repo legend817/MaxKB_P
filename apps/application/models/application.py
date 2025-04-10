@@ -6,14 +6,13 @@
     @date：2023/9/25 14:24
     @desc:
 """
-import datetime
-import json
 import uuid
 
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from langchain.schema import HumanMessage, AIMessage
 
+from common.encoder.encoder import SystemEncoder
 from common.mixins.app_model_mixin import AppModelMixin
 from dataset.models.data_set import DataSet
 from setting.models.model_management import Model
@@ -116,10 +115,15 @@ class ApplicationDatasetMapping(AppModelMixin):
         db_table = "application_dataset_mapping"
 
 
+def default_asker():
+    return {'user_name': '游客'}
+
+
 class Chat(AppModelMixin):
     id = models.UUIDField(primary_key=True, max_length=128, default=uuid.uuid1, editable=False, verbose_name="主键id")
     application = models.ForeignKey(Application, on_delete=models.CASCADE)
     abstract = models.CharField(max_length=1024, verbose_name="摘要")
+    asker = models.JSONField(verbose_name="访问者", default=default_asker, encoder=SystemEncoder)
     client_id = models.UUIDField(verbose_name="客户端id", default=None, null=True)
     is_deleted = models.BooleanField(verbose_name="", default=False)
 
@@ -132,16 +136,6 @@ class VoteChoices(models.TextChoices):
     UN_VOTE = -1, '未投票'
     STAR = 0, '赞同'
     TRAMPLE = 1, '反对'
-
-
-class DateEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, uuid.UUID):
-            return str(obj)
-        if isinstance(obj, datetime.datetime):
-            return obj.strftime("%Y-%m-%d %H:%M:%S")
-        else:
-            return json.JSONEncoder.default(self, obj)
 
 
 class ChatRecord(AppModelMixin):
@@ -160,7 +154,7 @@ class ChatRecord(AppModelMixin):
     message_tokens = models.IntegerField(verbose_name="请求token数量", default=0)
     answer_tokens = models.IntegerField(verbose_name="响应token数量", default=0)
     const = models.IntegerField(verbose_name="总费用", default=0)
-    details = models.JSONField(verbose_name="对话详情", default=dict, encoder=DateEncoder)
+    details = models.JSONField(verbose_name="对话详情", default=dict, encoder=SystemEncoder)
     improve_paragraph_id_list = ArrayField(verbose_name="改进标注列表",
                                            base_field=models.UUIDField(max_length=128, blank=True)
                                            , default=list)

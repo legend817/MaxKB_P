@@ -4,10 +4,10 @@ import { t } from '@/locales'
 export const startNode = {
   id: WorkflowType.Start,
   type: WorkflowType.Start,
-  x: 180,
-  y: 720,
+  x: 480,
+  y: 3340,
   properties: {
-    height: 200,
+    height: 364,
     stepName: t('views.applicationWorkflow.nodes.startNode.label'),
     config: {
       fields: [
@@ -17,32 +17,45 @@ export const startNode = {
         }
       ],
       globalFields: [
+        { label: t('views.applicationWorkflow.nodes.startNode.currentTime'), value: 'time' },
         {
-          value: 'time',
-          label: t('views.applicationWorkflow.nodes.startNode.currentTime')
+          label: t('views.application.applicationForm.form.historyRecord.label'),
+          value: 'history_context'
+        },
+        {
+          label: t('chat.chatId'),
+          value: 'chat_id'
         }
       ]
-    }
+    },
+    fields: [{ label: t('views.applicationWorkflow.nodes.startNode.question'), value: 'question' }],
+    globalFields: [
+      { label: t('views.applicationWorkflow.nodes.startNode.currentTime'), value: 'time' }
+    ],
+    showNode: true
   }
 }
 export const baseNode = {
   id: WorkflowType.Base,
   type: WorkflowType.Base,
-  x: 200,
-  y: 270,
+  x: 360,
+  y: 2761.3875,
   text: '',
   properties: {
-    width: 420,
-    height: 200,
+    height: 728.375,
     stepName: t('views.applicationWorkflow.nodes.baseNode.label'),
     input_field_list: [],
     node_data: {
       name: '',
       desc: '',
       // @ts-ignore
-      prologue: t('views.application.applicationForm.form.defaultPrologue')
+      prologue: t('views.application.applicationForm.form.defaultPrologue'),
+      tts_type: 'BROWSER'
     },
-    config: {}
+    config: {},
+    showNode: true,
+    user_input_config: { title: t('chat.userInput') },
+    user_input_field_list: []
   }
 }
 /**
@@ -239,6 +252,35 @@ export const imageUnderstandNode = {
   }
 }
 
+export const variableAssignNode = {
+  type: WorkflowType.VariableAssignNode,
+  text: t('views.applicationWorkflow.nodes.variableAssignNode.text'),
+  label: t('views.applicationWorkflow.nodes.variableAssignNode.label'),
+  height: 252,
+  properties: {
+    stepName: t('views.applicationWorkflow.nodes.variableAssignNode.label'),
+    config: {}
+  }
+}
+
+export const mcpNode = {
+  type: WorkflowType.McpNode,
+  text: t('views.applicationWorkflow.nodes.mcpNode.text'),
+  label: t('views.applicationWorkflow.nodes.mcpNode.label'),
+  height: 252,
+  properties: {
+    stepName: t('views.applicationWorkflow.nodes.mcpNode.label'),
+    config: {
+      fields: [
+        {
+          label: t('common.result'),
+          value: 'result'
+        }
+      ]
+    }
+  }
+}
+
 export const imageGenerateNode = {
   type: WorkflowType.ImageGenerateNode,
   text: t('views.applicationWorkflow.nodes.imageGenerateNode.text'),
@@ -307,7 +349,9 @@ export const menuNodes = [
   questionNode,
   documentExtractNode,
   speechToTextNode,
-  textToSpeechNode
+  textToSpeechNode,
+  variableAssignNode,
+  mcpNode
 ]
 
 /**
@@ -380,7 +424,9 @@ export const compareList = [
   { value: 'len_ge', label: t('views.applicationWorkflow.compare.len_ge') },
   { value: 'len_gt', label: t('views.applicationWorkflow.compare.len_gt') },
   { value: 'len_le', label: t('views.applicationWorkflow.compare.len_le') },
-  { value: 'len_lt', label: t('views.applicationWorkflow.compare.len_lt') }
+  { value: 'len_lt', label: t('views.applicationWorkflow.compare.len_lt') },
+  { value: 'is_true', label: t('views.applicationWorkflow.compare.is_true') },
+  { value: 'is_not_true', label: t('views.applicationWorkflow.compare.is_not_true') }
 ]
 
 export const nodeDict: any = {
@@ -400,7 +446,9 @@ export const nodeDict: any = {
   [WorkflowType.ImageUnderstandNode]: imageUnderstandNode,
   [WorkflowType.TextToSpeechNode]: textToSpeechNode,
   [WorkflowType.SpeechToTextNode]: speechToTextNode,
-  [WorkflowType.ImageGenerateNode]: imageGenerateNode
+  [WorkflowType.ImageGenerateNode]: imageGenerateNode,
+  [WorkflowType.VariableAssignNode]: variableAssignNode,
+  [WorkflowType.McpNode]: mcpNode
 }
 export function isWorkFlow(type: string | undefined) {
   return type === 'WORK_FLOW'

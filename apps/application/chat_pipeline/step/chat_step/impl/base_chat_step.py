@@ -76,10 +76,12 @@ def event_content(response,
     all_text = ''
     reasoning_content = ''
     try:
+        response_reasoning_content = False
         for chunk in response:
             reasoning_chunk = reasoning.get_reasoning_content(chunk)
             content_chunk = reasoning_chunk.get('content')
             if 'reasoning_content' in chunk.additional_kwargs:
+                response_reasoning_content = True
                 reasoning_content_chunk = chunk.additional_kwargs.get('reasoning_content', '')
             else:
                 reasoning_content_chunk = reasoning_chunk.get('reasoning_content')
@@ -95,6 +97,21 @@ def event_content(response,
                                                                                 'node_type': 'ai-chat-node',
                                                                                 'real_node_id': 'ai-chat-node',
                                                                                 'reasoning_content': reasoning_content_chunk if reasoning_content_enable else ''})
+        reasoning_chunk = reasoning.get_end_reasoning_content()
+        all_text += reasoning_chunk.get('content')
+        reasoning_content_chunk = ""
+        if not response_reasoning_content:
+            reasoning_content_chunk = reasoning_chunk.get(
+                'reasoning_content')
+        yield manage.get_base_to_response().to_stream_chunk_response(chat_id, str(chat_record_id), 'ai-chat-node',
+                                                                     [], reasoning_chunk.get('content'),
+                                                                     False,
+                                                                     0, 0, {'node_is_end': False,
+                                                                            'view_type': 'many_view',
+                                                                            'node_type': 'ai-chat-node',
+                                                                            'real_node_id': 'ai-chat-node',
+                                                                            'reasoning_content'
+                                                                            : reasoning_content_chunk if reasoning_content_enable else ''})
         # 获取token
         if is_ai_chat:
             try:
@@ -107,9 +124,11 @@ def event_content(response,
             request_token = 0
             response_token = 0
         write_context(step, manage, request_token, response_token, all_text)
+        asker = manage.context.get('form_data', {}).get('asker', None)
         post_response_handler.handler(chat_id, chat_record_id, paragraph_list, problem_text,
                                       all_text, manage, step, padding_problem_text, client_id,
-                                      reasoning_content=reasoning_content if reasoning_content_enable else '')
+                                      reasoning_content=reasoning_content if reasoning_content_enable else ''
+                                      , asker=asker)
         yield manage.get_base_to_response().to_stream_chunk_response(chat_id, str(chat_record_id), 'ai-chat-node',
                                                                      [], '', True,
                                                                      request_token, response_token,
@@ -118,16 +137,21 @@ def event_content(response,
         add_access_num(client_id, client_type, manage.context.get('application_id'))
     except Exception as e:
         logging.getLogger("max_kb_error").error(f'{str(e)}:{traceback.format_exc()}')
-        all_text = '异常' + str(e)
+        all_text = 'Exception:' + str(e)
         write_context(step, manage, 0, 0, all_text)
+        asker = manage.context.get('form_data', {}).get('asker', None)
         post_response_handler.handler(chat_id, chat_record_id, paragraph_list, problem_text,
-                                      all_text, manage, step, padding_problem_text, client_id)
+                                      all_text, manage, step, padding_problem_text, client_id, reasoning_content='',
+                                      asker=asker)
         add_access_num(client_id, client_type, manage.context.get('application_id'))
-        yield manage.get_base_to_response().to_stream_chunk_response(chat_id, str(chat_record_id), all_text,
-                                                                     'ai-chat-node',
-                                                                     [], True, 0, 0,
-                                                                     {'node_is_end': True, 'view_type': 'many_view',
-                                                                      'node_type': 'ai-chat-node'})
+        yield manage.get_base_to_response().to_stream_chunk_response(chat_id, str(chat_record_id), 'ai-chat-node',
+                                                                     [], all_text,
+                                                                     False,
+                                                                     0, 0, {'node_is_end': False,
+                                                                            'view_type': 'many_view',
+                                                                            'node_type': 'ai-chat-node',
+                                                                            'real_node_id': 'ai-chat-node',
+                                                                            'reasoning_content': ''})
 
 
 class BaseChatStep(IChatStep):
@@ -276,24 +300,35 @@ class BaseChatStep(IChatStep):
                 response_token = 0
             write_context(self, manage, request_token, response_token, chat_result.content)
             reasoning_result = reasoning.get_reasoning_content(chat_result)
-            content = reasoning_result.get('content')
+            reasoning_result_end = reasoning.get_end_reasoning_content()
+            content = reasoning_result.get('content') + reasoning_result_end.get('content')
             if 'reasoning_content' in chat_result.response_metadata:
                 reasoning_content = chat_result.response_metadata.get('reasoning_content', '')
             else:
-                reasoning_content = reasoning_result.get('reasoning_content')
+                reasoning_content = reasoning_result.get('reasoning_content') + reasoning_result_end.get(
+                    'reasoning_content')
+            asker = manage.context.get('form_data', {}).get('asker', None)
             post_response_handler.handler(chat_id, chat_record_id, paragraph_list, problem_text,
-                                          chat_result.content, manage, self, padding_problem_text, client_id,
-                                          reasoning_content=reasoning_content if reasoning_content_enable else '')
+                                          content, manage, self, padding_problem_text, client_id,
+                                          reasoning_content=reasoning_content if reasoning_content_enable else '',
+                                          asker=asker)
             add_access_num(client_id, client_type, manage.context.get('application_id'))
             return manage.get_base_to_response().to_block_response(str(chat_id), str(chat_record_id),
                                                                    content, True,
                                                                    request_token, response_token,
-                                                                   {'reasoning_content': reasoning_content})
+                                                                   {
+                                                                       'reasoning_content': reasoning_content if reasoning_content_enable else '',
+                                                                       'answer_list': [{
+                                                                           'content': content,
+                                                                           'reasoning_content': reasoning_content if reasoning_content_enable else ''
+                                                                       }]})
         except Exception as e:
             all_text = 'Exception:' + str(e)
             write_context(self, manage, 0, 0, all_text)
+            asker = manage.context.get('form_data', {}).get('asker', None)
             post_response_handler.handler(chat_id, chat_record_id, paragraph_list, problem_text,
-                                          all_text, manage, self, padding_problem_text, client_id)
+                                          all_text, manage, self, padding_problem_text, client_id, reasoning_content='',
+                                          asker=asker)
             add_access_num(client_id, client_type, manage.context.get('application_id'))
             return manage.get_base_to_response().to_block_response(str(chat_id), str(chat_record_id), all_text, True, 0,
                                                                    0, _status=status.HTTP_500_INTERNAL_SERVER_ERROR)

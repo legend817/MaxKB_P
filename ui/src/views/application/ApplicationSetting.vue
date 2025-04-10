@@ -83,6 +83,7 @@
                   @change="model_change"
                   @submitModel="getModel"
                   showFooter
+                  :model-type="'LLM'"
                 ></ModelSelect>
               </el-form-item>
               <el-form-item
@@ -203,7 +204,15 @@
                             >
                               <img src="@/assets/icon_web.svg" style="width: 58%" alt="" />
                             </AppAvatar>
-
+                            <AppAvatar
+                              v-else-if="relatedObject(datasetList, item, 'id')?.type === '2'"
+                              class="mr-8 avatar-purple"
+                              shape="square"
+                              :size="32"
+                              style="background: none"
+                            >
+                              <img src="@/assets/logo_lark.svg" style="width: 100%" alt="" />
+                            </AppAvatar>
                             <AppAvatar v-else class="mr-8 avatar-blue" shape="square" :size="32">
                               <img src="@/assets/icon_document.svg" style="width: 58%" alt="" />
                             </AppAvatar>
@@ -336,6 +345,7 @@
                   v-model="applicationForm.stt_model_id"
                   :placeholder="$t('views.application.applicationForm.form.voiceInput.placeholder')"
                   :options="sttModelOptions"
+                  :model-type="'STT'"
                 ></ModelSelect>
               </el-form-item>
               <el-form-item
@@ -398,6 +408,7 @@
                     "
                     :options="ttsModelOptions"
                     @change="ttsModelChange()"
+                    :model-type="'TTS'"
                   ></ModelSelect>
 
                   <el-button
@@ -419,7 +430,7 @@
           {{ $t('views.application.applicationForm.title.appTest') }}
         </h4>
         <div class="dialog-bg">
-          <div class="flex align-center p-24">
+          <div class="flex align-center p-16 mb-8">
             <div
               class="edit-avatar mr-12"
               @mouseenter="showEditIcon = true"
@@ -551,7 +562,7 @@ const applicationForm = ref<ApplicationFormType>({
     prompt: defaultPrompt,
     system: t('views.application.applicationForm.form.roleSettings.placeholder'),
     no_references_prompt: '{question}',
-    reasoning_content_enable: false,
+    reasoning_content_enable: false
   },
   model_params_setting: {},
   problem_optimization: false,
@@ -682,6 +693,9 @@ function getDetail() {
     applicationForm.value.tts_type = res.data.tts_type
     applicationForm.value.model_setting.no_references_prompt =
       res.data.model_setting.no_references_prompt || '{question}'
+    application.asyncGetAccessToken(id, loading).then((res: any) => {
+      applicationForm.value = { ...applicationForm.value, ...res.data }
+    })
   })
 }
 

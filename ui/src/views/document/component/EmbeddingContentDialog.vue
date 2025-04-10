@@ -1,16 +1,15 @@
 <template>
   <el-dialog
     v-model="dialogVisible"
-    :title="$t('views.document.form.selectVectorization.label')"
+    :title="$t('components.selectParagraph.title')"
     :before-close="close"
+    width="450"
   >
     <el-radio-group v-model="state" class="radio-block">
-      <el-radio value="error" size="large" class="mb-16">{{
-        $t('views.document.form.selectVectorization.error')
+      <el-radio value="error" size="large">{{
+        $t('components.selectParagraph.error')
       }}</el-radio>
-      <el-radio value="all" size="large">{{
-        $t('views.document.form.selectVectorization.all')
-      }}</el-radio>
+      <el-radio value="all" size="large">{{ $t('components.selectParagraph.all') }}</el-radio>
     </el-radio-group>
     <template #footer>
       <div class="dialog-footer">

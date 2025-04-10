@@ -8,7 +8,7 @@
         </h4>
       </template>
       <div class="hit-test__main p-16" v-loading="loading">
-        <div class="question-title clearfix" v-if="questionTitle">
+        <div class="question-title" :style="{ visibility: questionTitle ? 'visible' : 'hidden' }">
           <div class="avatar">
             <AppAvatar>
               <img src="@/assets/user-icon.svg" style="width: 54%" alt="" />
@@ -24,10 +24,14 @@
               v-if="first"
               :image="emptyImg"
               :description="$t('views.application.hitTest.emptyMessage1')"
+              style="padding-top: 160px"
+              :image-size="125"
             />
             <el-empty
               v-else-if="paragraphDetail.length == 0"
               :description="$t('views.application.hitTest.emptyMessage2')"
+              style="padding-top: 160px"
+              :image-size="125"
             />
             <el-row v-else>
               <el-col
@@ -170,7 +174,7 @@
               <el-input-number
                 v-model="cloneForm.top_number"
                 :min="1"
-                :max="100"
+                :max="10000"
                 controls-position="right"
                 class="w-full"
               />
@@ -214,7 +218,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { reactive, ref, onMounted, computed } from 'vue'
+import { nextTick, ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { cloneDeep } from 'lodash'
 import datasetApi from '@/api/dataset'
@@ -229,6 +233,7 @@ const {
   params: { id }
 } = route as any
 
+const quickInputRef = ref()
 const ParagraphDialogRef = ref()
 const loading = ref(false)
 const paragraphDetail = ref<any[]>([])
@@ -281,17 +286,32 @@ function editParagraph(row: any) {
 }
 
 function sendChatHandle(event: any) {
-  if (!event.ctrlKey) {
-    // 如果没有按下组合键ctrl，则会阻止默认事件
+  if (!event?.ctrlKey && !event?.shiftKey && !event?.altKey && !event?.metaKey) {
+    // 如果没有按下组合键，则会阻止默认事件
     event.preventDefault()
     if (!isDisabledChart.value && !loading.value) {
       getHitTestList()
     }
   } else {
-    // 如果同时按下ctrl+回车键，则会换行
-    inputValue.value += '\n'
+    // 如果同时按下ctrl/shift/cmd/opt +enter，则会换行
+    insertNewlineAtCursor(event)
   }
 }
+const insertNewlineAtCursor = (event?: any) => {
+  const textarea = quickInputRef.value.$el.querySelector(
+    '.el-textarea__inner'
+  ) as HTMLTextAreaElement
+  const startPos = textarea.selectionStart
+  const endPos = textarea.selectionEnd
+  // 阻止默认行为（避免额外的换行符）
+  event.preventDefault()
+  // 在光标处插入换行符
+  inputValue.value = inputValue.value.slice(0, startPos) + '\n' + inputValue.value.slice(endPos)
+  nextTick(() => {
+    textarea.setSelectionRange(startPos + 1, startPos + 1) // 光标定位到换行后位置
+  })
+}
+
 function getHitTestList() {
   const obj = {
     query_text: inputValue.value,
@@ -337,6 +357,8 @@ onMounted(() => {})
       padding-left: 40px;
       .text {
         padding: 6px 0;
+        height: 34px;
+        box-sizing: border-box;
       }
     }
   }

@@ -369,13 +369,17 @@ const getModelForm = (model_name: string) => {
   }
 }
 
-const open = (provider: Provider) => {
+const open = (provider: Provider, model_type?: string) => {
   ModelApi.listModelType(provider.provider, model_type_loading).then((ok) => {
     model_type_list.value = ok.data
   })
   providerValue.value = provider
   dialogVisible.value = true
+  base_form_data.value.model_type = model_type || ''
   activeName.value = 'base-info'
+  if (model_type) {
+    list_base_model(model_type)
+  }
 }
 
 const list_base_model = (model_type: any, change?: boolean) => {

@@ -54,7 +54,7 @@ const currentRow = computed(() => {
           return currentItem.value
         }
         return {
-          attrs: row.attrs || { maxlength: 20, minlength: 0 },
+          attrs: row.attrs || { maxlength: 200, minlength: 0 },
           field: row.field || row.variable,
           input_type: 'TextInput',
           label: row.label || row.name,
@@ -117,16 +117,18 @@ const currentRow = computed(() => {
         return currentItem.value
     }
   } else {
-    return { input_type: 'TextInput', required: false, attrs: { maxlength: 20, minlength: 0 } }
+    return { input_type: 'TextInput', required: false, attrs: { maxlength: 200, minlength: 0 }, show_default_value: true }
   }
 })
 const currentIndex = ref(null)
 const inputTypeList = ref([
   { label: t('dynamicsForm.input_type_list.TextInput'), value: 'TextInputConstructor' },
+  { label: t('dynamicsForm.input_type_list.PasswordInput'), value: 'PasswordInputConstructor' },
   { label: t('dynamicsForm.input_type_list.SingleSelect'), value: 'SingleSelectConstructor' },
   { label: t('dynamicsForm.input_type_list.MultiSelect'), value: 'MultiSelectConstructor' },
   { label: t('dynamicsForm.input_type_list.RadioCard'), value: 'RadioCardConstructor' },
-  { label: t('dynamicsForm.input_type_list.DatePicker'), value: 'DatePickerConstructor' }
+  { label: t('dynamicsForm.input_type_list.DatePicker'), value: 'DatePickerConstructor' },
+  { label: t('dynamicsForm.input_type_list.SwitchInput'), value: 'SwitchInputConstructor' },
 ])
 
 const dialogVisible = ref<boolean>(false)

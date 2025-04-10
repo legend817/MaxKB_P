@@ -13,13 +13,17 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.views import APIView
 from rest_framework.views import Request
 
+import dataset.models
 from common.auth import TokenAuth, has_permissions
 from common.constants.permission_constants import PermissionConstants, CompareConstants, Permission, Group, Operate, \
     ViewPermission, RoleConstants
+from common.log.log import log
 from common.response import result
 from common.response.result import get_page_request_params, get_page_api_response, get_api_response
 from common.swagger_api.common_api import CommonApi
+from dataset.serializers.common_serializers import GenerateRelatedSerializer
 from dataset.serializers.dataset_serializers import DataSetSerializers
+from dataset.views.common import get_dataset_operation_object
 from setting.serializers.provider_serializers import ModelSerializer
 from django.utils.translation import gettext_lazy as _
 
@@ -31,8 +35,8 @@ class Dataset(APIView):
         authentication_classes = [TokenAuth]
 
         @action(methods=['PUT'], detail=False)
-        @swagger_auto_schema(operation_summary="同步Web站点知识库",
-                             operation_id="同步Web站点知识库",
+        @swagger_auto_schema(operation_summary=_("Synchronize the knowledge base of the website"),
+                             operation_id=_("Synchronize the knowledge base of the website"),
                              manual_parameters=DataSetSerializers.SyncWeb.get_request_params_api(),
                              responses=result.get_default_response(),
                              tags=[_('Knowledge Base')])
@@ -42,6 +46,8 @@ class Dataset(APIView):
                                             dynamic_tag=keywords.get('dataset_id'))],
             compare=CompareConstants.AND), PermissionConstants.DATASET_EDIT,
             compare=CompareConstants.AND)
+        @log(menu='Knowledge Base', operate="Synchronize the knowledge base of the website",
+             get_operation_object=lambda r, keywords: get_dataset_operation_object(keywords.get('dataset_id')))
         def put(self, request: Request, dataset_id: str):
             return result.success(DataSetSerializers.SyncWeb(
                 data={'sync_type': request.query_params.get('sync_type'), 'id': dataset_id,
@@ -52,14 +58,17 @@ class Dataset(APIView):
         parser_classes = [MultiPartParser]
 
         @action(methods=['POST'], detail=False)
-        @swagger_auto_schema(operation_summary="创建QA知识库",
-                             operation_id="创建QA知识库",
+        @swagger_auto_schema(operation_summary=_("Create QA knowledge base"),
+                             operation_id=_("Create QA knowledge base"),
                              manual_parameters=DataSetSerializers.Create.CreateQASerializers.get_request_params_api(),
                              responses=get_api_response(
                                  DataSetSerializers.Create.CreateQASerializers.get_response_body_api()),
                              tags=[_('Knowledge Base')]
                              )
         @has_permissions(PermissionConstants.DATASET_CREATE, compare=CompareConstants.AND)
+        @log(menu='Knowledge Base', operate="Create QA knowledge base",
+             get_operation_object=lambda r, keywords: {'name': r.data.get('name'), 'desc': r.data.get('desc'),
+                                                       'file_list': r.FILES.getlist('file')})
         def post(self, request: Request):
             return result.success(DataSetSerializers.Create(data={'user_id': request.user.id}).save_qa({
                 'file_list': request.FILES.getlist('file'),
@@ -79,6 +88,13 @@ class Dataset(APIView):
                              tags=[_('Knowledge Base')]
                              )
         @has_permissions(PermissionConstants.DATASET_CREATE, compare=CompareConstants.AND)
+        @log(menu='Knowledge Base', operate="Create a web site knowledge base",
+             get_operation_object=lambda r, keywords: {'name': r.data.get('name'), 'desc': r.data.get('desc'),
+                                                       'file_list': r.FILES.getlist('file'),
+                                                       'meta': {'source_url': r.data.get('source_url'),
+                                                                'selector': r.data.get('selector'),
+                                                                'embedding_mode_id': r.data.get('embedding_mode_id')}}
+             )
         def post(self, request: Request):
             return result.success(DataSetSerializers.Create(data={'user_id': request.user.id}).save_web(request.data))
 
@@ -117,6 +133,8 @@ class Dataset(APIView):
                          tags=[_('Knowledge Base')]
                          )
     @has_permissions(PermissionConstants.DATASET_CREATE, compare=CompareConstants.AND)
+    @log(menu='Knowledge Base', operate="Create a knowledge base",
+         get_operation_object=lambda r, keywords: {'name': r.data.get('name'), 'desc': r.data.get('desc')})
     def post(self, request: Request):
         return result.success(DataSetSerializers.Create(data={'user_id': request.user.id}).save(request.data))
 
@@ -150,9 +168,28 @@ class Dataset(APIView):
                              )
         @has_permissions(lambda r, keywords: Permission(group=Group.DATASET, operate=Operate.MANAGE,
                                                         dynamic_tag=keywords.get('dataset_id')))
+        @log(menu='Knowledge Base', operate="Re-vectorize",
+             get_operation_object=lambda r, keywords: get_dataset_operation_object(keywords.get('dataset_id')))
         def put(self, request: Request, dataset_id: str):
             return result.success(
                 DataSetSerializers.Operate(data={'id': dataset_id, 'user_id': request.user.id}).re_embedding())
+
+    class GenerateRelated(APIView):
+        authentication_classes = [TokenAuth]
+
+        @action(methods=['PUT'], detail=False)
+        @swagger_auto_schema(operation_summary=_('Generate related'), operation_id=_('Generate related'),
+                             manual_parameters=DataSetSerializers.Operate.get_request_params_api(),
+                             request_body=GenerateRelatedSerializer.get_request_body_api(),
+                             tags=[_('Knowledge Base')]
+                             )
+        @log(menu='document', operate="Generate related documents",
+             get_operation_object=lambda r, keywords: get_dataset_operation_object(keywords.get('dataset_id'))
+             )
+        def put(self, request: Request, dataset_id: str):
+            return result.success(
+                DataSetSerializers.Operate(data={'id': dataset_id, 'user_id': request.user.id}).generate_related(
+                    request.data))
 
     class Export(APIView):
         authentication_classes = [TokenAuth]
@@ -164,6 +201,8 @@ class Dataset(APIView):
                              )
         @has_permissions(lambda r, keywords: Permission(group=Group.DATASET, operate=Operate.MANAGE,
                                                         dynamic_tag=keywords.get('dataset_id')))
+        @log(menu='Knowledge Base', operate="Export knowledge base",
+             get_operation_object=lambda r, keywords: get_dataset_operation_object(keywords.get('dataset_id')))
         def get(self, request: Request, dataset_id: str):
             return DataSetSerializers.Operate(data={'id': dataset_id, 'user_id': request.user.id}).export_excel()
 
@@ -178,6 +217,8 @@ class Dataset(APIView):
                              )
         @has_permissions(lambda r, keywords: Permission(group=Group.DATASET, operate=Operate.MANAGE,
                                                         dynamic_tag=keywords.get('dataset_id')))
+        @log(menu='Knowledge Base', operate="Export knowledge base containing images",
+             get_operation_object=lambda r, keywords: get_dataset_operation_object(keywords.get('dataset_id')))
         def get(self, request: Request, dataset_id: str):
             return DataSetSerializers.Operate(data={'id': dataset_id, 'user_id': request.user.id}).export_zip()
 
@@ -193,6 +234,8 @@ class Dataset(APIView):
                                                         dynamic_tag=keywords.get('dataset_id')),
                          lambda r, k: Permission(group=Group.DATASET, operate=Operate.DELETE,
                                                  dynamic_tag=k.get('dataset_id')), compare=CompareConstants.AND)
+        @log(menu='Knowledge Base', operate="Delete knowledge base",
+             get_operation_object=lambda r, keywords: get_dataset_operation_object(keywords.get('dataset_id')))
         def delete(self, request: Request, dataset_id: str):
             operate = DataSetSerializers.Operate(data={'id': dataset_id})
             return result.success(operate.delete())
@@ -219,6 +262,8 @@ class Dataset(APIView):
                              )
         @has_permissions(lambda r, keywords: Permission(group=Group.DATASET, operate=Operate.MANAGE,
                                                         dynamic_tag=keywords.get('dataset_id')))
+        @log(menu='Knowledge Base', operate="Modify knowledge base information",
+             get_operation_object=lambda r, keywords: get_dataset_operation_object(keywords.get('dataset_id')))
         def put(self, request: Request, dataset_id: str):
             return result.success(
                 DataSetSerializers.Operate(data={'id': dataset_id, 'user_id': request.user.id}).edit(request.data,

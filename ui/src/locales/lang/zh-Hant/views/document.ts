@@ -12,7 +12,7 @@ export default {
     cancelGenerateQuestion: '取消生成問題',
     cancelVectorization: '取消向量化',
     cancelGenerate: '取消生成',
-    export: '匯出',
+    export: '匯出'
   },
   tip: {
     saveMessage: '當前的更改尚未保存，確認退出嗎?',
@@ -149,11 +149,6 @@ export default {
       label: '相似度高于',
       placeholder: '直接返回分段内容',
       requiredMessage: '请输入相似度'
-    },
-    selectVectorization: {
-      label: '选择向量化内容',
-      error: '向量化未成功的分段',
-      all: '全部分段'
     }
   },
   hitHandlingMethod: {
@@ -169,5 +164,12 @@ export default {
     tip4: '生成效果取決於所選模型和提示詞，用戶可自行調整至最佳效果。',
     prompt1: `內容：{data}\n\n請總結上面的內容，並根據內容總結生成 5 個問題。\n回答要求：\n - 請只輸出問題；\n - 請將每個問題放置在`,
     prompt2: `標籤中。`
+  },
+  feishu: {
+    selectDocument: '選擇文檔',
+    tip1: '支持文檔和表格類型，包含TXT、Markdown、PDF、DOCX、HTML、XLS、XLSX、CSV、ZIP格式；',
+    tip2: '系統不存儲原始文檔，導入文檔前，建議規範文檔的分段標識。',
+    allCheck: '全選',
+    errorMessage1: '請選擇文檔'
   }
 }

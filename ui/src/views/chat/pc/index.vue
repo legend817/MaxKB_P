@@ -66,10 +66,22 @@
                       <auto-tooltip :content="row.abstract">
                         {{ row.abstract }}
                       </auto-tooltip>
-                      <div @click.stop v-if="mouseId === row.id && row.id !== 'new'">
-                        <el-button style="padding: 0" link @click.stop="deleteLog(row)">
-                          <el-icon><Delete /></el-icon>
-                        </el-button>
+                      <div @click.stop v-show="mouseId === row.id && row.id !== 'new'">
+                        <el-dropdown trigger="click" :teleported="false">
+                          <el-icon class="rotate-90 mt-4"><MoreFilled /></el-icon>
+                          <template #dropdown>
+                            <el-dropdown-menu>
+                              <el-dropdown-item @click.stop="editLogTitle(row)">
+                                <el-icon><EditPen /></el-icon>
+                                {{ $t('common.edit') }}
+                              </el-dropdown-item>
+                              <el-dropdown-item @click.stop="deleteLog(row)">
+                                <el-icon><Delete /></el-icon>
+                                {{ $t('common.delete') }}
+                              </el-dropdown-item>
+                            </el-dropdown-menu>
+                          </template>
+                        </el-dropdown>
                       </div>
                     </div>
                   </template>
@@ -89,7 +101,7 @@
         </div>
         <div class="chat-pc__right">
           <div class="right-header border-b mb-24 p-16-24 flex-between">
-            <h4 class="ellipsis-1" style="width: 70%">
+            <h4 class="ellipsis-1" style="width: 66%">
               {{ currentChatName }}
             </h4>
 
@@ -144,6 +156,7 @@
         </el-button>
       </div>
     </div>
+    <EditTitleDialog ref="EditTitleDialogRef" @refresh="refreshFieldTitle" />
   </div>
 </template>
 
@@ -155,14 +168,13 @@ import { isAppIcon } from '@/utils/application'
 import useStore from '@/stores'
 import useResize from '@/layout/hooks/useResize'
 import { hexToRgba } from '@/utils/theme'
+import EditTitleDialog from './EditTitleDialog.vue'
 import { t } from '@/locales'
 useResize()
 
 const { user, log, common } = useStore()
 
-const isDefaultTheme = computed(() => {
-  return user.isDefaultTheme()
-})
+const EditTitleDialogRef = ref()
 
 const isCollapse = ref(false)
 
@@ -215,6 +227,16 @@ const mouseId = ref('')
 
 function mouseenter(row: any) {
   mouseId.value = row.id
+}
+
+function editLogTitle(row: any) {
+  EditTitleDialogRef.value.open(row, applicationDetail.value.id)
+}
+function refreshFieldTitle(chatId: string, abstract: string) {
+  const find = chatLogData.value.find((item: any) => item.id == chatId)
+  if (find) {
+    find.abstract = abstract
+  }
 }
 function deleteLog(row: any) {
   log.asyncDelChatClientLog(applicationDetail.value.id, row.id, left_loading).then(() => {
@@ -270,7 +292,16 @@ function getChatLog(id: string, refresh?: boolean) {
   log.asyncGetChatLogClient(id, page, left_loading).then((res: any) => {
     chatLogData.value = res.data.records
     if (refresh) {
-      currentChatName.value = chatLogData.value?.[0].abstract
+      currentChatName.value = chatLogData.value?.[0]?.abstract
+    } else {
+      paginationConfig.value.current_page = 1
+      paginationConfig.value.total = 0
+      currentRecordList.value = []
+      currentChatId.value = chatLogData.value?.[0]?.id || 'new'
+      currentChatName.value = chatLogData.value?.[0]?.abstract || t('chat.createChat')
+      if (currentChatId.value !== 'new') {
+        getChatRecord()
+      }
     }
   })
 }
@@ -312,6 +343,14 @@ const clickListHandle = (item: any) => {
     currentChatName.value = item.abstract
     if (currentChatId.value !== 'new') {
       getChatRecord()
+
+      // 切换对话后，取消暂停的浏览器播放
+      if (window.speechSynthesis.paused && window.speechSynthesis.speaking) {
+        window.speechSynthesis.resume()
+        nextTick(() => {
+          window.speechSynthesis.cancel()
+        })
+      }
     }
   }
   if (common.isMobile()) {

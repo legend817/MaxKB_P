@@ -1,4 +1,4 @@
-import { number } from 'echarts'
+import { MsgError } from '@/utils/message'
 
 export function toThousands(num: any) {
   return num?.toString().replace(/\d+/, function (n: any) {
@@ -48,7 +48,7 @@ const typeList: any = {
 export function getImgUrl(name: string) {
   const list = Object.values(typeList).flat()
 
-  const type = list.includes(fileType(name).toLowerCase()) ? fileType(name).toLowerCase() : 'unknow'
+  const type = list.includes(fileType(name).toLowerCase()) ? fileType(name).toLowerCase() : 'unknown'
   return new URL(`../assets/fileType/${type}-icon.svg`, import.meta.url).href
 }
 // 是否是白名单后缀
@@ -107,4 +107,61 @@ export function cutFilename(filename: string, num: number) {
   const lastIndex = filename.lastIndexOf('.')
   const suffix = lastIndex === -1 ? '' : filename.substring(lastIndex + 1)
   return filename.substring(0, num - suffix.length - 1) + '.' + suffix
+}
+
+export function getNormalizedUrl(url: string) {
+  if (url && !url.endsWith('/') && !/\.[^/]+$/.test(url)) {
+    return url + '/'
+  }
+  return url
+}
+
+interface LoadScriptOptions {
+  jsId?: string // 自定义脚本 ID
+  forceReload?: boolean // 是否强制重新加载（默认 false）
+}
+
+export const loadScript = (url: string, options: LoadScriptOptions = {}): Promise<void> => {
+  const { jsId, forceReload = false } = options
+  const scriptId = jsId || `script-${btoa(url).slice(0, 12)}` // 生成唯一 ID
+
+  return new Promise((resolve, reject) => {
+    // 检查是否已存在且无需强制加载
+    const existingScript = document.getElementById(scriptId) as HTMLScriptElement | null
+    if (existingScript && !forceReload) {
+      if (existingScript.src === url) {
+        existingScript.onload = () => resolve() // 复用现有脚本
+        return
+      }
+      // URL 不同则移除旧脚本
+      existingScript.parentElement?.removeChild(existingScript)
+    }
+
+    // 创建新脚本
+    const script = document.createElement('script')
+    script.id = scriptId
+    script.src = url
+    script.async = true // 明确启用异步加载
+
+    // 成功回调
+    script.onload = () => {
+      resolve()
+    }
+
+    // 错误处理（兼容性增强）
+    script.onerror = () => {
+      reject(new Error(`Failed to load script: ${url}`))
+      cleanupScript(script)
+    }
+
+    // 插入到 <head> 确保加载顺序
+    document.head.appendChild(script)
+  })
+}
+
+// 清理脚本（可选）
+const cleanupScript = (script: HTMLScriptElement) => {
+  script.onload = null
+  script.onerror = null
+  script.parentElement?.removeChild(script)
 }

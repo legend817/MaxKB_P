@@ -1,6 +1,7 @@
 <template>
   <div
     class="chat-embed layout-bg"
+    :class="{ 'chat-embed--popup': isPopup }"
     v-loading="loading"
     :style="{
       '--el-color-primary': applicationDetail?.custom_theme?.theme_color,
@@ -87,10 +88,22 @@
               >
                 <template #default="{ row }">
                   <div class="flex-between">
-                    <auto-tooltip :content="row.abstract">
-                      {{ row.abstract }}
-                    </auto-tooltip>
-                    <div @click.stop v-if="mouseId === row.id && row.id !== 'new'">
+                    <ReadWrite
+                      @change="editName($event, row)"
+                      :data="row.abstract"
+                      trigger="manual"
+                      :write="row.writeStatus"
+                      @close="closeWrite(row)"
+                      :maxlength="1024"
+                    />
+                    <div
+                      @click.stop
+                      v-if="mouseId === row.id && row.id !== 'new' && !row.writeStatus"
+                      class="flex"
+                    >
+                      <el-button style="padding: 0" link @click.stop="openWrite(row)">
+                        <el-icon><EditPen /></el-icon>
+                      </el-button>
                       <el-button style="padding: 0" link @click.stop="deleteLog(row)">
                         <el-icon><Delete /></el-icon>
                       </el-button>
@@ -116,11 +129,18 @@
 </template>
 <script setup lang="ts">
 import { ref, onMounted, reactive, nextTick, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { isAppIcon } from '@/utils/application'
 import { hexToRgba } from '@/utils/theme'
+import { MsgError } from '@/utils/message'
 import useStore from '@/stores'
+import { t } from '@/locales'
 const { user, log } = useStore()
+const route = useRoute()
 
+const isPopup = computed(() => {
+  return route.query.popup !== 'no'
+})
 const AiChatRef = ref()
 const loading = ref(false)
 const left_loading = ref(false)
@@ -153,6 +173,31 @@ const customStyle = computed(() => {
     color: applicationDetail.value?.custom_theme?.header_font_color
   }
 })
+
+function editName(val: string, item: any) {
+  if (val) {
+    const obj = {
+      abstract: val
+    }
+    log.asyncPutChatClientLog(applicationDetail.value.id, item.id, obj, loading).then(() => {
+      const find = chatLogData.value.find((row: any) => row.id === item.id)
+      if (find) {
+        find.abstract = val
+      }
+      item['writeStatus'] = false
+    })
+  } else {
+    MsgError(t('views.applicationWorkflow.tip.nameMessage'))
+  }
+}
+
+function openWrite(item: any) {
+  item['writeStatus'] = true
+}
+
+function closeWrite(item: any) {
+  item['writeStatus'] = false
+}
 
 function mouseenter(row: any) {
   mouseId.value = row.id
@@ -201,6 +246,13 @@ function getChatLog(id: string) {
 
   log.asyncGetChatLogClient(id, page, left_loading).then((res: any) => {
     chatLogData.value = res.data.records
+    paginationConfig.current_page = 1
+    paginationConfig.total = 0
+    currentRecordList.value = []
+    currentChatId.value = chatLogData.value?.[0]?.id || 'new'
+    if (currentChatId.value !== 'new') {
+      getChatRecord()
+    }
   })
 }
 
@@ -277,8 +329,8 @@ onMounted(() => {
     border-bottom: 1px solid var(--el-border-color);
   }
   &__main {
-    padding-top: calc(var(--app-header-height) + 24px);
-    height: calc(100vh - var(--app-header-height) - 24px);
+    padding-top: calc(var(--app-header-height) + 16px);
+    height: calc(100vh - var(--app-header-height) - 16px);
     overflow: hidden;
   }
   .new-chat-button {
@@ -296,8 +348,13 @@ onMounted(() => {
     z-index: 2009;
     position: absolute;
     top: 16px;
-    right: 85px;
+    right: 16px;
     font-size: 22px;
+  }
+  &.chat-embed--popup {
+    .chat-popover-button {
+      right: 85px;
+    }
   }
   .chat-popover-mask {
     background-color: var(--el-overlay-color-lighter);

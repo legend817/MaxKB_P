@@ -49,6 +49,7 @@
             :options="modelOptions"
             @submitModel="getModel"
             showFooter
+            :model-type="'LLM'"
           ></ModelSelect>
         </el-form-item>
 
@@ -115,25 +116,13 @@
           />
         </el-form-item>
 
-        <el-form-item @click.prevent>
-          <template #label>
-            <div class="flex align-center">
-              <div class="mr-4">
-                <span
-                  >{{ $t('views.applicationWorkflow.nodes.aiChatNode.returnContent.label')
-                  }}<span class="danger">*</span></span
-                >
-              </div>
-              <el-tooltip effect="dark" placement="right" popper-class="max-w-200">
-                <template #content>
-                  {{ $t('views.applicationWorkflow.nodes.aiChatNode.returnContent.tooltip') }}
-                </template>
-                <AppIcon iconName="app-warning" class="app-warning-icon"></AppIcon>
-              </el-tooltip>
-            </div>
-          </template>
-          <el-switch size="small" v-model="chat_data.is_result" />
-        </el-form-item>
+        <div class="flex-between mb-16">
+          <div class="lighter">{{ $t('views.applicationWorkflow.nodes.mcpNode.tool') }}</div>
+          <el-button type="primary" link @click="openMcpServersDialog" @refreshForm="refreshParam">
+            <el-icon><Setting /></el-icon>
+          </el-button>
+        </div>
+
         <el-form-item @click.prevent>
           <template #label>
             <div class="flex-between w-full">
@@ -154,6 +143,24 @@
           </template>
           <el-switch size="small" v-model="chat_data.model_setting.reasoning_content_enable" />
         </el-form-item>
+        <el-form-item @click.prevent>
+          <template #label>
+            <div class="flex align-center">
+              <div class="mr-4">
+                <span>{{
+                  $t('views.applicationWorkflow.nodes.aiChatNode.returnContent.label')
+                }}</span>
+              </div>
+              <el-tooltip effect="dark" placement="right" popper-class="max-w-200">
+                <template #content>
+                  {{ $t('views.applicationWorkflow.nodes.aiChatNode.returnContent.tooltip') }}
+                </template>
+                <AppIcon iconName="app-warning" class="app-warning-icon"></AppIcon>
+              </el-tooltip>
+            </div>
+          </template>
+          <el-switch size="small" v-model="chat_data.is_result" />
+        </el-form-item>
       </el-form>
     </el-card>
 
@@ -162,6 +169,7 @@
       ref="ReasoningParamSettingDialogRef"
       @refresh="submitReasoningDialog"
     />
+    <McpServersDialog ref="mcpServersDialogRef" @refresh="submitMcpServersDialog" />
   </NodeContainer>
 </template>
 <script setup lang="ts">
@@ -176,6 +184,7 @@ import { isLastNode } from '@/workflow/common/data'
 import AIModeParamSettingDialog from '@/views/application/component/AIModeParamSettingDialog.vue'
 import { t } from '@/locales'
 import ReasoningParamSettingDialog from '@/views/application/component/ReasoningParamSettingDialog.vue'
+import McpServersDialog from '@/views/application/component/McpServersDialog.vue'
 const { model } = useStore()
 
 const wheel = (e: any) => {
@@ -297,6 +306,20 @@ function submitReasoningDialog(val: any) {
   }
 
   set(props.nodeModel.properties.node_data, 'model_setting', model_setting)
+}
+
+const mcpServersDialogRef = ref()
+function openMcpServersDialog() {
+  const config = {
+    mcp_servers: chat_data.value.mcp_servers,
+    mcp_enable: chat_data.value.mcp_enable
+  }
+  mcpServersDialogRef.value.open(config)
+}
+
+function submitMcpServersDialog(config: any) {
+  set(props.nodeModel.properties.node_data, 'mcp_servers', config.mcp_servers)
+  set(props.nodeModel.properties.node_data, 'mcp_enable', config.mcp_enable)
 }
 
 onMounted(() => {

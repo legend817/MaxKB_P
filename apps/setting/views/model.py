@@ -13,12 +13,16 @@ from rest_framework.views import Request
 
 from common.auth import TokenAuth, has_permissions
 from common.constants.permission_constants import PermissionConstants
+from common.log.log import log
 from common.response import result
 from common.util.common import query_params_to_single_dict
 from setting.models_provider.constants.model_provider_constants import ModelProvideConstants
-from setting.serializers.provider_serializers import ProviderSerializer, ModelSerializer, get_default_model_params_setting
+from setting.serializers.provider_serializers import ProviderSerializer, ModelSerializer, \
+    get_default_model_params_setting
 from setting.swagger_api.provide_api import ProvideApi, ModelCreateApi, ModelQueryApi, ModelEditApi
 from django.utils.translation import gettext_lazy as _
+
+from setting.views.common import get_model_operation_object, get_edit_model_details
 
 
 class Model(APIView):
@@ -30,6 +34,9 @@ class Model(APIView):
                          request_body=ModelCreateApi.get_request_body_api()
         , tags=[_('model')])
     @has_permissions(PermissionConstants.MODEL_CREATE)
+    @log(menu='model', operate='Create model',
+         get_operation_object=lambda r, k: {'name': r.data.get('name')},
+         get_details=get_edit_model_details)
     def post(self, request: Request):
         return result.success(
             ModelSerializer.Create(data={**request.data, 'user_id': str(request.user.id)}).insert(request.user.id,
@@ -62,9 +69,11 @@ class Model(APIView):
         authentication_classes = [TokenAuth]
 
         @action(methods=['GET'], detail=False)
-        @swagger_auto_schema(operation_summary=_('Query model meta information, this interface does not carry authentication information'),
-                             operation_id=_('Query model meta information, this interface does not carry authentication information'),
-                             tags=[_('model')])
+        @swagger_auto_schema(operation_summary=_(
+            'Query model meta information, this interface does not carry authentication information'),
+            operation_id=_(
+                'Query model meta information, this interface does not carry authentication information'),
+            tags=[_('model')])
         @has_permissions(PermissionConstants.MODEL_READ)
         def get(self, request: Request, model_id: str):
             return result.success(
@@ -101,6 +110,8 @@ class Model(APIView):
                              manual_parameters=ProvideApi.ModelForm.get_request_params_api(),
                              tags=[_('model')])
         @has_permissions(PermissionConstants.MODEL_READ)
+        @log(menu='model', operate='Save model parameter form',
+             get_operation_object=lambda r, k: get_model_operation_object(k.get('model_id')))
         def put(self, request: Request, model_id: str):
             return result.success(
                 ModelSerializer.ModelParamsForm(data={'id': model_id, 'user_id': request.user.id})
@@ -115,6 +126,9 @@ class Model(APIView):
                              request_body=ModelEditApi.get_request_body_api()
             , tags=[_('model')])
         @has_permissions(PermissionConstants.MODEL_CREATE)
+        @log(menu='model', operate='Update model',
+             get_operation_object=lambda r, k: get_model_operation_object(k.get('model_id')),
+             get_details=get_edit_model_details)
         def put(self, request: Request, model_id: str):
             return result.success(
                 ModelSerializer.Operate(data={'id': model_id, 'user_id': request.user.id}).edit(request.data,
@@ -126,6 +140,8 @@ class Model(APIView):
                              responses=result.get_default_response()
             , tags=[_('model')])
         @has_permissions(PermissionConstants.MODEL_DELETE)
+        @log(menu='model', operate='Delete model',
+             get_operation_object=lambda r, k: get_model_operation_object(k.get('model_id')))
         def delete(self, request: Request, model_id: str):
             return result.success(
                 ModelSerializer.Operate(data={'id': model_id, 'user_id': request.user.id}).delete())
@@ -153,6 +169,7 @@ class Provide(APIView):
                              request_body=ProvideApi.get_request_body_api()
             , tags=[_('model')])
         @has_permissions(PermissionConstants.MODEL_READ)
+        @log(menu='model', operate='Call the supplier function to obtain form data')
         def post(self, request: Request, provider: str, method: str):
             return result.success(
                 ProviderSerializer(data={'provider': provider, 'method': method}).exec(request.data, with_valid=True))

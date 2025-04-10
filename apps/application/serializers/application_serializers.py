@@ -6,6 +6,7 @@
     @date：2023/11/7 10:02
     @desc:
 """
+import asyncio
 import datetime
 import hashlib
 import json
@@ -23,6 +24,8 @@ from django.db.models import QuerySet
 from django.db.models.expressions import RawSQL
 from django.http import HttpResponse
 from django.template import Template, Context
+from langchain_mcp_adapters.client import MultiServerMCPClient
+from mcp.client.sse import sse_client
 from rest_framework import serializers, status
 from rest_framework.utils.formatting import lazy_format
 
@@ -39,13 +42,13 @@ from common.exception.app_exception import AppApiException, NotFound404, AppUnau
 from common.field.common import UploadedImageField, UploadedFileField
 from common.models.db_model_manage import DBModelManage
 from common.response import result
-from common.util.common import valid_license, password_encrypt
+from common.util.common import valid_license, password_encrypt, restricted_loads
 from common.util.field_message import ErrMessage
 from common.util.file_util import get_file_content
 from dataset.models import DataSet, Document, Image
 from dataset.serializers.common_serializers import list_paragraph, get_embedding_model_by_dataset_id_list
 from embedding.models import SearchMode
-from function_lib.models.function import FunctionLib, PermissionType
+from function_lib.models.function import FunctionLib, PermissionType, FunctionType
 from function_lib.serializers.function_lib_serializer import FunctionLibSerializer, FunctionLibModelSerializer
 from setting.models import AuthOperate, TeamMemberPermission
 from setting.models.model_management import Model
@@ -60,6 +63,7 @@ chat_cache = cache.caches['chat_cache']
 
 
 class MKInstance:
+
     def __init__(self, application: dict, function_lib_list: List[dict], version: str):
         self.application = application
         self.function_lib_list = function_lib_list
@@ -117,7 +121,7 @@ def valid_model_params_setting(model_id, model_params_setting):
 
 
 class DatasetSettingSerializer(serializers.Serializer):
-    top_n = serializers.FloatField(required=True, max_value=100, min_value=1,
+    top_n = serializers.FloatField(required=True, max_value=10000, min_value=1,
                                    error_messages=ErrMessage.float(_("Reference segment number")))
     similarity = serializers.FloatField(required=True, max_value=1, min_value=0,
                                         error_messages=ErrMessage.float(_("Acquaintance")))
@@ -126,7 +130,7 @@ class DatasetSettingSerializer(serializers.Serializer):
                                                              _("Maximum number of quoted characters")))
     search_mode = serializers.CharField(required=True, validators=[
         validators.RegexValidator(regex=re.compile("^embedding|keywords|blend$"),
-                                  message=_("The type only supports register|reset_password"), code=500)
+                                  message=_("The type only supports embedding|keywords|blend"), code=500)
     ], error_messages=ErrMessage.char(_("Retrieval Mode")))
 
     no_references_setting = NoReferencesSetting(required=True,
@@ -142,10 +146,12 @@ class ModelSettingSerializer(serializers.Serializer):
                                                  error_messages=ErrMessage.char(_("No citation segmentation prompt")))
     reasoning_content_enable = serializers.BooleanField(required=False,
                                                         error_messages=ErrMessage.char(_("Thinking process switch")))
-    reasoning_content_start = serializers.CharField(required=False, allow_null=True, allow_blank=True, max_length=256,
+    reasoning_content_start = serializers.CharField(required=False, allow_null=True, default="<think>",
+                                                    allow_blank=True, max_length=256,
                                                     error_messages=ErrMessage.char(
                                                         _("The thinking process begins to mark")))
-    reasoning_content_end = serializers.CharField(required=False, allow_null=True, allow_blank=True, max_length=256,
+    reasoning_content_end = serializers.CharField(required=False, allow_null=True, allow_blank=True, default="</think>",
+                                                  max_length=256,
                                                   error_messages=ErrMessage.char(_("End of thinking process marker")))
 
 
@@ -326,7 +332,8 @@ class ApplicationSerializer(serializers.Serializer):
                                 for field in input_field_list:
                                     if field['assignment_method'] == 'api_input' and field['variable'] in params:
                                         query += f"&{field['variable']}={params[field['variable']]}"
-
+            if 'asker' in params:
+                query += f"&asker={params.get('asker')}"
             return query
 
     class AccessTokenSerializer(serializers.Serializer):
@@ -374,6 +381,8 @@ class ApplicationSerializer(serializers.Serializer):
                 application_access_token.show_source = instance.get('show_source')
             if 'language' in instance and instance.get('language') is not None:
                 application_access_token.language = instance.get('language')
+            if 'language' not in instance or instance.get('language') is None:
+                application_access_token.language = None
             application_access_token.save()
             application_setting_model = DBModelManage.get_model('application_setting')
             xpack_cache = DBModelManage.get_model('xpack_cache')
@@ -574,13 +583,13 @@ class ApplicationSerializer(serializers.Serializer):
         id = serializers.CharField(required=True, error_messages=ErrMessage.uuid(_("Application ID")))
         user_id = serializers.UUIDField(required=False, error_messages=ErrMessage.uuid(_("User ID")))
         query_text = serializers.CharField(required=True, error_messages=ErrMessage.char(_("Query text")))
-        top_number = serializers.IntegerField(required=True, max_value=100, min_value=1,
+        top_number = serializers.IntegerField(required=True, max_value=10000, min_value=1,
                                               error_messages=ErrMessage.integer(_("topN")))
         similarity = serializers.FloatField(required=True, max_value=2, min_value=0,
                                             error_messages=ErrMessage.float(_("Relevance")))
         search_mode = serializers.CharField(required=True, validators=[
             validators.RegexValidator(regex=re.compile("^embedding|keywords|blend$"),
-                                      message=_("The type only supports register|reset_password"), code=500)
+                                      message=_("The type only supports embedding|keywords|blend"), code=500)
         ], error_messages=ErrMessage.char(_("Retrieval Mode")))
 
         def is_valid(self, *, raise_exception=False):
@@ -717,7 +726,7 @@ class ApplicationSerializer(serializers.Serializer):
             user_id = self.data.get('user_id')
             mk_instance_bytes = self.data.get('file').read()
             try:
-                mk_instance = pickle.loads(mk_instance_bytes)
+                mk_instance = restricted_loads(mk_instance_bytes)
             except Exception as e:
                 raise AppApiException(1001, _("Unsupported file format"))
             application = mk_instance.application
@@ -800,8 +809,10 @@ class ApplicationSerializer(serializers.Serializer):
             if with_valid:
                 self.is_valid(raise_exception=True)
             application = QuerySet(Application).filter(id=self.data.get("application_id")).first()
-            return FunctionLibSerializer.Query(data={'user_id': application.user_id, 'is_active': True}).list(
-                with_valid=True)
+            return FunctionLibSerializer.Query(
+                data={'user_id': application.user_id, 'is_active': True,
+                      'function_type': FunctionType.PUBLIC}
+            ).list(with_valid=True)
 
         def get_function_lib(self, function_lib_id, with_valid=True):
             if with_valid:
@@ -971,6 +982,7 @@ class ApplicationSerializer(serializers.Serializer):
                                                 'draggable': application_setting.draggable,
                                                 'show_guide': application_setting.show_guide,
                                                 'avatar': application_setting.avatar,
+                                                'show_avatar': application_setting.show_avatar,
                                                 'float_icon': application_setting.float_icon,
                                                 'authentication': application_setting.authentication,
                                                 'authentication_type': application_setting.authentication_value.get(
@@ -979,6 +991,7 @@ class ApplicationSerializer(serializers.Serializer):
                                                 'disclaimer_value': application_setting.disclaimer_value,
                                                 'custom_theme': application_setting.custom_theme,
                                                 'user_avatar': application_setting.user_avatar,
+                                                'show_user_avatar': application_setting.show_user_avatar,
                                                 'float_location': application_setting.float_location}
             return ApplicationSerializer.Query.reset_application(
                 {**ApplicationSerializer.ApplicationModel(application).data,
@@ -1191,7 +1204,9 @@ class ApplicationSerializer(serializers.Serializer):
                 self.is_valid(raise_exception=True)
             if with_valid:
                 self.is_valid()
-            embed_application = QuerySet(Application).get(id=app_id)
+            embed_application = QuerySet(Application).filter(id=app_id).first()
+            if embed_application is None:
+                raise AppApiException(500, _('Application does not exist'))
             if embed_application.type == ApplicationTypeChoices.WORK_FLOW:
                 work_flow_version = QuerySet(WorkFlowVersion).filter(application_id=embed_application.id).order_by(
                     '-create_time')[0:1].first()
@@ -1290,3 +1305,27 @@ class ApplicationSerializer(serializers.Serializer):
                 application_api_key.save()
                 # 写入缓存
                 get_application_api_key(application_api_key.secret_key, False)
+
+    class McpServers(serializers.Serializer):
+        mcp_servers = serializers.JSONField(required=True)
+
+        def get_mcp_servers(self, with_valid=True):
+            if with_valid:
+                self.is_valid(raise_exception=True)
+            servers = json.loads(self.data.get('mcp_servers'))
+
+            async def get_mcp_tools(servers):
+                async with MultiServerMCPClient(servers) as client:
+                    return client.get_tools()
+
+            tools = []
+            for server in servers:
+                tools += [
+                    {
+                        'server': server,
+                        'name': tool.name,
+                        'description': tool.description,
+                        'args_schema': tool.args_schema,
+                    }
+                    for tool in asyncio.run(get_mcp_tools({server: servers[server]}))]
+            return tools

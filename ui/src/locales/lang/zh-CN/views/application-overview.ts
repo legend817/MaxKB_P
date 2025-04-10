@@ -40,7 +40,8 @@ export default {
     EmbedDialog: {
       fullscreenModeTitle: '全屏模式',
       copyInstructions: '复制以下代码进行嵌入',
-      floatingModeTitle: '浮窗模式'
+      floatingModeTitle: '浮窗模式',
+      mobileModeTitle: '移动端模式'
     },
     LimitDialog: {
       showSourceLabel: '显示知识来源',
@@ -71,6 +72,7 @@ export default {
       replace: '替换',
       imageMessage: '建议尺寸 32*32，支持 JPG、PNG、GIF，大小不超过 10 MB',
       AIAvatar: 'AI 回复头像',
+      display: '显示',
       floatIcon: '浮窗入口图标',
       iconDefaultPosition: '图标默认位置',
       iconPosition: {

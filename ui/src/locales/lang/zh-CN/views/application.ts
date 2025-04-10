@@ -28,18 +28,22 @@ export default {
     },
     form: {
       appName: {
-        label: '应用名称',
+        label: '名称',
         placeholder: '请输入应用名称',
         requiredMessage: '请输入应用名称'
       },
       appDescription: {
-        label: '应用描述',
+        label: '描述',
         placeholder: '描述该应用的应用场景及用途，如：XXX 小助手回答用户提出的 XXX 产品使用问题'
       },
       appType: {
-        label: '选择应用类型',
+        label: '类型',
         simplePlaceholder: '适合新手创建小助手',
         workflowPlaceholder: '适合高级用户自定义小助手的工作流'
+      },
+      appTemplate: {
+        blankApp: '空白应用',
+        assistantApp: '知识库问答助手'
       },
       aiModel: {
         label: 'AI 模型',
@@ -150,6 +154,8 @@ export default {
     wechatTip: '打造公众号智能应用',
     lark: '飞书应用',
     larkTip: '打造飞书智能应用',
+    slack: 'Slack',
+    slackTip: '打造 Slack 智能应用',
     setting: '配置',
     callback: '回调地址',
     callbackTip: '请输入回调地址',
@@ -191,9 +197,14 @@ export default {
       appIdPlaceholder: '请输入App ID',
       appSecretPlaceholder: '请输入App Secret',
       verificationTokenPlaceholder: '请输入Verification Token',
-      urlInfo: '-事件与回调-事件配置-配置订阅方式的 "请求地址" 中'
+      urlInfo: '-事件与回调-事件配置-配置订阅方式的 "请求地址" 中',
+      folderTokenPlaceholder: '请输入Folder Token'
     },
-
+    slackSetting: {
+      title: 'Slack 应用配置',
+      signingSecretPlaceholder: '请输入 Signing Secret',
+      botUserTokenPlaceholder: '请输入 Bot User Token'
+    },
     copyUrl: '复制链接填入到'
   },
   hitTest: {

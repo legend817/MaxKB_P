@@ -1,8 +1,11 @@
 export default {
   title: '函数库',
+  internalTitle: '内置函数',
+  added: '已添加',
   createFunction: '创建函数',
   editFunction: '编辑函数',
   copyFunction: '复制函数',
+  importFunction: '导入函数',
   searchBar: {
     placeholder: '按函数名称搜索'
   },
@@ -27,7 +30,8 @@ export default {
     },
     form: {
       functionName: {
-        label: '函数名称',
+        label: '名称',
+        name: '函数名称',
         placeholder: '请输入函数名称',
         requiredMessage: '请输入函数名称'
       },
@@ -60,7 +64,7 @@ export default {
         paramInfo2: '使用函数时不显示',
         code: '函数内容（Python）',
         selectPlaceholder: '请选择参数',
-        inputPlaceholder: '请输入参数值',
+        inputPlaceholder: '请输入参数值'
       },
       debug: {
         run: '运行',

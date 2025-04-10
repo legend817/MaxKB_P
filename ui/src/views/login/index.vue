@@ -1,5 +1,5 @@
 <template>
-  <login-layout v-if="user.isEnterprise() ? user.themeInfo : true" v-loading="loading">
+  <login-layout v-if="!loading" v-loading="loading">
     <LoginContainer :subTitle="user.themeInfo?.slogan || $t('views.system.theme.defaultSlogan')">
       <h2 class="mb-24" v-if="!showQrCodeTab">{{ loginMode || $t('views.login.title') }}</h2>
       <div v-if="!showQrCodeTab">
@@ -36,9 +36,9 @@
           </div>
         </el-form>
 
-        <el-button size="large" type="primary" class="w-full" @click="login">{{
-          $t('views.login.buttons.login')
-        }}</el-button>
+        <el-button size="large" type="primary" class="w-full" @click="login"
+          >{{ $t('views.login.buttons.login') }}
+        </el-button>
         <div class="operate-container flex-between mt-12">
           <!-- <el-button class="register" @click="router.push('/register')" link type="primary">
           注册
@@ -103,15 +103,17 @@
 <script setup lang="ts">
 import { onMounted, ref, onBeforeMount } from 'vue'
 import type { LoginRequest } from '@/api/type/user'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import type { FormInstance, FormRules } from 'element-plus'
 import useStore from '@/stores'
 import authApi from '@/api/auth-setting'
-import { MsgConfirm, MsgSuccess } from '@/utils/message'
+import { MsgConfirm, MsgError, MsgSuccess } from '@/utils/message'
 
 import { t, getBrowserLang } from '@/locales'
 import QrCodeTab from '@/views/login/components/QrCodeTab.vue'
 import { useI18n } from 'vue-i18n'
+import * as dd from 'dingtalk-jsapi'
+import { loadScript } from '@/utils/utils'
 const { locale } = useI18n({ useScope: 'global' })
 const loading = ref<boolean>(false)
 const { user } = useStore()
@@ -143,11 +145,22 @@ const modeList = ref<string[]>([''])
 const QrList = ref<any[]>([''])
 const loginMode = ref('')
 const showQrCodeTab = ref(false)
+
 interface qrOption {
   key: string
   value: string
 }
+
 const orgOptions = ref<qrOption[]>([])
+
+function uuidv4() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0
+    const v = c === 'x' ? r : (r & 0x3) | 0x8
+    return v.toString(16)
+  })
+}
+
 function redirectAuth(authType: string) {
   if (authType === 'LDAP' || authType === '') {
     return
@@ -177,12 +190,16 @@ function redirectAuth(authType: string) {
           }
         }
         if (authType === 'OIDC') {
-          url = `${config.authEndpoint}?client_id=${config.clientId}&redirect_uri=${redirectUrl}&response_type=code&scope=openid+profile+email`
+          const scope = config.scope || 'openid+profile+email'
+          url = `${config.authEndpoint}?client_id=${config.clientId}&redirect_uri=${redirectUrl}&response_type=code&scope=${scope}`
+          if (config.state) {
+            url += `&state=${config.state}`
+          }
         }
         if (authType === 'OAuth2') {
           url =
             `${config.authEndpoint}?client_id=${config.clientId}&response_type=code` +
-            `&redirect_uri=${redirectUrl}&state=${res.data.id}`
+            `&redirect_uri=${redirectUrl}&state=${uuidv4()}`
           if (config.scope) {
             url += `&scope=${config.scope}`
           }
@@ -224,10 +241,10 @@ const login = () => {
   })
 }
 
-onMounted(() => {
+onBeforeMount(() => {
+  loading.value = true
   user.asyncGetProfile().then((res) => {
     if (user.isEnterprise()) {
-      loading.value = true
       user
         .getAuthType()
         .then((res) => {
@@ -260,11 +277,90 @@ onMounted(() => {
           }
         })
         .finally(() => (loading.value = false))
+    } else {
+      loading.value = false
     }
   })
 })
+declare const window: any
+
+onMounted(() => {
+  const route = useRoute()
+  const currentUrl = ref(route.fullPath)
+  const params = new URLSearchParams(currentUrl.value.split('?')[1])
+  const client = params.get('client')
+
+  const handleDingTalk = () => {
+    const code = params.get('corpId')
+    if (code) {
+      dd.runtime.permission.requestAuthCode({ corpId: code }).then((res) => {
+        console.log('DingTalk client request success:', res)
+        user.dingOauth2Callback(res.code).then(() => {
+          router.push({ name: 'home' })
+        })
+      })
+    }
+  }
+
+  const handleLark = () => {
+    const appId = params.get('appId')
+    const callRequestAuthCode = () => {
+      window.tt?.requestAuthCode({
+        appId: appId,
+        success: (res: any) => {
+          user.larkCallback(res.code).then(() => {
+            router.push({ name: 'home' })
+          })
+        },
+        fail: (error: any) => {
+          MsgError(error)
+        }
+      })
+    }
+
+    loadScript('https://lf-scm-cn.feishucdn.com/lark/op/h5-js-sdk-1.5.35.js', {
+      jsId: 'lark-sdk',
+      forceReload: true
+    })
+      .then(() => {
+        if (window.tt) {
+          window.tt.requestAccess({
+            appID: appId,
+            scopeList: [],
+            success: (res: any) => {
+              user.larkCallback(res.code).then(() => {
+                router.push({ name: 'home' })
+              })
+            },
+            fail: (error: any) => {
+              const { errno } = error
+              if (errno === 103) {
+                callRequestAuthCode()
+              }
+            }
+          })
+        } else {
+          callRequestAuthCode()
+        }
+      })
+      .catch((error) => {
+        console.error('SDK 加载失败:', error)
+      })
+  }
+
+  switch (client) {
+    case 'dingtalk':
+      handleDingTalk()
+      break
+    case 'lark':
+      handleLark()
+      break
+    default:
+      break
+  }
+})
 </script>
-<style lang="scss" scope>
+<style lang="scss" scoped>
 .login-gradient-divider {
   position: relative;
   text-align: center;

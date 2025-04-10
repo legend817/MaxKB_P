@@ -39,7 +39,8 @@ export default {
     EmbedDialog: {
       fullscreenModeTitle: '全螢幕模式',
       copyInstructions: '複製以下程式碼進行嵌入',
-      floatingModeTitle: '浮窗模式'
+      floatingModeTitle: '浮窗模式',
+      mobileModeTitle: '移動端模式'
     },
     LimitDialog: {
       dialogTitle: '訪問限制',
@@ -69,6 +70,7 @@ export default {
       default: '預設',
       askUserAvatar: '提問用戶頭像',
       replace: '取代',
+      display: '顯示',
       imageMessage: '建議尺寸 32*32，支援 JPG、PNG、GIF，大小不超過 10 MB',
       AIAvatar: 'AI 回覆頭像',
       floatIcon: '浮窗入口圖示',

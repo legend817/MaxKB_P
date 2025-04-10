@@ -13,9 +13,11 @@ from rest_framework.views import APIView
 
 from application.serializers.application_version_serializers import ApplicationVersionSerializer
 from application.swagger_api.application_version_api import ApplicationVersionApi
+from application.views import get_application_operation_object
 from common.auth import has_permissions, TokenAuth
 from common.constants.permission_constants import PermissionConstants, CompareConstants, ViewPermission, RoleConstants, \
     Permission, Group, Operate
+from common.log.log import log
 from common.response import result
 from django.utils.translation import gettext_lazy as _
 
@@ -82,6 +84,8 @@ class ApplicationVersionView(APIView):
             [lambda r, keywords: Permission(group=Group.APPLICATION, operate=Operate.MANAGE,
                                             dynamic_tag=keywords.get('application_id'))],
             compare=CompareConstants.AND))
+        @log(menu='Application', operate="Modify application version information",
+             get_operation_object=lambda r, k: get_application_operation_object(k.get('application_id')))
         def put(self, request: Request, application_id: str, work_flow_version_id: str):
             return result.success(
                 ApplicationVersionSerializer.Operate(

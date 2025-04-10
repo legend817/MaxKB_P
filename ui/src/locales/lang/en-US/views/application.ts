@@ -46,6 +46,10 @@ export default {
         simplePlaceholder: 'Suitable for beginners to create assistant.',
         workflowPlaceholder: 'Suitable for advanced users to customize the workflow of assistant'
       },
+      appTemplate: {
+        blankApp: 'Blank APP',
+        assistantApp: 'Knowledge Assistant'
+      },
       aiModel: {
         label: 'AI Model',
         placeholder: 'Please select an AI model'
@@ -69,9 +73,9 @@ export default {
         referencesTooltip:
           'By adjusting the content of the prompt, you can guide the direction of the large model chat. This prompt will be fixed at the beginning of the context. Variables used: {data} carries known information from the knowledge; {question} is the question posed by the user.',
         defaultPrompt: `Known information: {data}
-          Question: {question}
-           Response requirements: 
-           - Please use concise and professional language to answer the user's question.
+Question: {question}
+Response requirements: 
+- Please use concise and professional language to answer the user's question.
            `
       },
       historyRecord: {
@@ -110,7 +114,7 @@ export default {
       reasoningContent: {
         label: 'Output Thinking',
         tooltip:
-          'Please set the thinking label based on the model\'s return, and the content in the middle of the label will be recognized as the thinking process.',
+          "Please set the thinking label based on the model's return, and the content in the middle of the label will be recognized as the thinking process.",
         start: 'Start',
         end: 'End'
       }
@@ -135,7 +139,7 @@ export default {
       hybridSearch: 'Hybrid Search',
       hybridSearchTooltip:
         'Hybrid search is a retrieval method based on both vector and text similarity, suitable for medium data volumes in the knowledge.',
-      similarityThreshold: 'Lowest Similarity',
+      similarityThreshold: 'Similarity higher than',
       similarityTooltip: 'The higher the similarity, the stronger the correlation.',
       topReferences: 'Top N Segments',
       maxCharacters: 'Maximum  Characters per Reference',
@@ -166,6 +170,8 @@ export default {
     wechatPlatform: 'WeChat Open Platform',
     dingtalkPlatform: 'DingTalk Open Platform',
     larkPlatform: 'Lark Open Platform',
+    slack: 'Slack',
+    slackTip: 'Create Slack intelligent APP',
     wecomSetting: {
       title: 'WeCom Configuration',
       cropId: 'Crop ID',
@@ -200,11 +206,17 @@ export default {
     },
     larkSetting: {
       title: 'Lark Configuration',
-      appIdPlaceholder: 'Please enter APP ID',
-      appSecretPlaceholder: 'Please enter APP secret',
+      appIdPlaceholder: 'Please enter App ID',
+      appSecretPlaceholder: 'Please enter App secret',
       verificationTokenPlaceholder: 'Please enter verification token',
       urlInfo:
-        '-Events and callbacks - event configuration - configure the "request address" of the subscription method'
+        '-Events and callbacks - event configuration - configure the "request address" of the subscription method',
+      folderTokenPlaceholder: 'Please enter folder token'
+    },
+    slackSetting: {
+      title: 'Slack Configuration',
+      signingSecretPlaceholder: 'Please enter signing secret',
+      botUserTokenPlaceholder: 'Please enter bot user token'
     },
     copyUrl: 'Copy the link and fill it in'
   },

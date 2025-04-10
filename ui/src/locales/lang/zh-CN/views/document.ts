@@ -12,7 +12,7 @@ export default {
     cancelGenerateQuestion: '取消生成问题',
     cancelVectorization: '取消向量化',
     cancelGenerate: '取消生成',
-    export: '导出',
+    export: '导出'
   },
   tip: {
     saveMessage: '当前的更改尚未保存，确认退出吗?',
@@ -55,7 +55,8 @@ export default {
       tip1: '1、点击下载对应模版并完善信息',
       tip2: '2、上传的表格文件中每个 sheet 会作为一个文档，sheet名称为文档名称',
       tip3: '3、每次最多上传 50 个文件，每个文件不超过 100MB'
-    }
+    },
+    lark: {}
   },
   setRules: {
     title: {
@@ -108,7 +109,7 @@ export default {
     GENERATE: '生成中',
     SYNC: '同步中',
     REVOKE: '取消中',
-    finish:'完成'
+    finish: '完成'
   },
   enableStatus: {
     label: '启用状态',
@@ -149,11 +150,6 @@ export default {
       label: '相似度高于',
       placeholder: '直接返回分段内容',
       requiredMessage: '请输入相似度'
-    },
-    selectVectorization: {
-      label: '选择向量化内容',
-      error: '向量化未成功的分段',
-      all: '全部分段'
     }
   },
   hitHandlingMethod: {
@@ -169,5 +165,12 @@ export default {
     tip4: '生成效果依赖于所选模型和提示词，用户可自行调整至最佳效果。',
     prompt1: `内容：{data}\n\n请总结上面的内容，并根据内容总结生成 5 个问题。\n回答要求：\n- 请只输出问题；\n- 请将每个问题放置`,
     prompt2: `标签中。`
+  },
+  feishu: {
+    selectDocument: '选择文档',
+    tip1: '支持文档和表格类型，包含TXT、Markdown、PDF、DOCX、HTML、XLS、XLSX、CSV、ZIP格式；',
+    tip2: '系统不存储原始文档，导入文档前，建议规范文档的分段标识。',
+    allCheck: '全选',
+    errorMessage1: '请选择文档'
   }
 }

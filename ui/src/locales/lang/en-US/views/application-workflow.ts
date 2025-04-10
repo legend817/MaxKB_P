@@ -1,5 +1,6 @@
 export default {
   node: 'Node',
+  nodeName: 'Node Name',
   baseComponent: 'Basic',
   nodeSetting: 'Node Settings',
   workflow: 'Workflow',
@@ -20,6 +21,8 @@ export default {
     latestRelease: 'Latest Release',
     copyParam: 'Copy Parameters',
     debug: 'Run',
+    exit: 'Exit',
+    exitSave: 'Save & Exit'
   },
   tip: {
     publicSuccess: 'Published successfully',
@@ -33,7 +36,8 @@ export default {
     repeatedNodeError: 'A node with this name already exists',
     cannotCopy: 'Cannot be copied',
     copyError: 'Node already copied',
-    paramErrorMessage: 'Parameter already exists: '
+    paramErrorMessage: 'Parameter already exists: ',
+    saveMessage: 'Current changes have not been saved. Save before exiting?'
   },
   delete: {
     confirmTitle: 'Confirm to delete this node?',
@@ -48,12 +52,13 @@ export default {
     beautify: 'Auto-Arrange'
   },
   variable: {
+    label: 'Variable',
     global: 'Global Variable',
     Referencing: 'Referenced Variable',
     ReferencingRequired: 'Referenced variable is required',
     ReferencingError: 'Invalid referenced variable',
     NoReferencing: 'Referenced variable does not exist',
-    fieldMessage: 'Please select a variable'
+    placeholder: 'Please select a variable'
   },
   condition: {
     title: 'Execution Condition',
@@ -82,12 +87,11 @@ export default {
     baseNode: {
       label: 'Base Information',
       appName: {
-        label: 'App Name',
-    
+        label: 'App Name'
       },
       appDescription: {
-        label: 'App Description',
-       },
+        label: 'App Description'
+      },
       fileUpload: {
         label: 'File Upload',
         tooltip: 'When enabled, the Q&A page will display a file upload button.'
@@ -114,7 +118,7 @@ export default {
                   If you want the user to see the output of this node, please turn on the switch.`
       },
       defaultPrompt: 'Known Information',
-      think: 'Thinking Process',
+      think: 'Thinking Process'
     },
     searchDatasetNode: {
       label: 'Knowledge Retrieval',
@@ -188,8 +192,7 @@ export default {
         label: 'Form Output Content',
         requiredMessage:
           'Please set the output content of this node, { form } is a placeholder for the form.',
-        tooltip:
-          'Define the output content of this node. { form } is a placeholder for the form'
+        tooltip: 'Define the output content of this node. { form } is a placeholder for the form'
       },
       formAllContent: 'All Form Content',
       formSetting: 'Form Configuration'
@@ -212,6 +215,22 @@ export default {
         requiredMessage: 'Please select an image'
       }
     },
+    variableAssignNode: {
+      label: 'Variable Assign',
+      text: 'Update the value of the global variable',
+      assign: 'Set Value'
+    },
+    mcpNode: {
+      label: 'MCP Server',
+      text: 'Call MCP Tools through SSE',
+      getToolsSuccess: 'Get Tools Successfully',
+      getTool: 'Get Tools',
+      tool: 'Tool',
+      toolParam: 'Tool Params',
+      mcpServerTip: 'Please enter the JSON format of the MCP server config',
+      mcpToolTip: 'Please select a tool',
+      configLabel: 'MCP Server Config (Only supports SSE call method)'
+    },
     imageGenerateNode: {
       label: 'Image Generation',
       text: 'Generate images based on provided text content',
@@ -222,13 +241,11 @@ export default {
       },
       prompt: {
         label: 'Positive Prompt',
-        tooltip:
-          'Describe elements and visual features you want in the generated image'
+        tooltip: 'Describe elements and visual features you want in the generated image'
       },
       negative_prompt: {
         label: 'Negative Prompt',
-        tooltip:
-          'Describe elements you want to exclude from the generated image',
+        tooltip: 'Describe elements you want to exclude from the generated image',
         placeholder:
           'Please describe content you do not want to generate, such as color, bloody content'
       }
@@ -276,7 +293,9 @@ export default {
     len_ge: 'Length greater than or equal to',
     len_gt: 'Length greater than',
     len_le: 'Length less than or equal to',
-    len_lt: 'Length less than'
+    len_lt: 'Length less than',
+    is_true: 'Is true',
+    is_not_true: 'Is not true'
   },
   FileUploadSetting: {}
 }

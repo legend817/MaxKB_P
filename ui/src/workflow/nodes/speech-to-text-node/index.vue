@@ -36,6 +36,8 @@
             v-model="form_data.stt_model_id"
             :placeholder="$t('views.application.applicationForm.form.voiceInput.placeholder')"
             :options="modelOptions"
+            showFooter
+            :model-type="'STT'"
           ></ModelSelect>
         </el-form-item>
         <el-form-item
@@ -75,7 +77,7 @@
               <div class="mr-4">
                 <span
                   >{{ $t('views.applicationWorkflow.nodes.aiChatNode.returnContent.label')
-                  }}<span class="danger">*</span></span
+                  }}</span
                 >
               </div>
               <el-tooltip effect="dark" placement="right" popper-class="max-w-200">

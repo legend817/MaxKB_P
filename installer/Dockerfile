@@ -25,7 +25,7 @@ RUN python3 -m venv /opt/py3 && \
     pip install poetry==1.8.5 --break-system-packages && \
     poetry config virtualenvs.create false && \
     . /opt/py3/bin/activate && \
-    if [ "$(uname -m)" = "x86_64" ]; then sed -i 's/^torch.*/torch = {version = "^2.2.1+cpu", source = "pytorch"}/g' pyproject.toml; fi && \
+    if [ "$(uname -m)" = "x86_64" ]; then sed -i 's/^torch.*/torch = {version = "^2.6.0+cpu", source = "pytorch"}/g' pyproject.toml; fi && \
     poetry install && \
     export MAXKB_CONFIG_TYPE=ENV && python3 /opt/maxkb/app/apps/manage.py compilemessages
 
@@ -70,7 +70,7 @@ RUN chmod 755 /opt/maxkb/app/installer/run-maxkb.sh && \
     useradd --no-create-home --home /opt/maxkb/app/sandbox sandbox -g root && \
     chown -R sandbox:root /opt/maxkb/app/sandbox && \
     chmod g-x /usr/local/bin/* /usr/bin/* /bin/* /usr/sbin/* /sbin/* /usr/lib/postgresql/15/bin/* && \
-    chmod g+x /usr/local/bin/python* /bin/sh
+    chmod g+x /usr/local/bin/python*
 
 EXPOSE 8080
 

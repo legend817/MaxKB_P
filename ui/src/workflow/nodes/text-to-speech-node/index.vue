@@ -45,6 +45,8 @@
             v-model="form_data.tts_model_id"
             :placeholder="$t('views.application.applicationForm.form.voicePlay.placeholder')"
             :options="modelOptions"
+            showFooter
+            :model-type="'TTS'"
           ></ModelSelect>
         </el-form-item>
         <el-form-item
@@ -82,10 +84,9 @@
           <template #label>
             <div class="flex align-center">
               <div class="mr-4">
-                <span
-                  >{{ $t('views.applicationWorkflow.nodes.aiChatNode.returnContent.label')
-                  }}<span class="danger">*</span></span
-                >
+                <span>{{
+                  $t('views.applicationWorkflow.nodes.aiChatNode.returnContent.label')
+                }}</span>
               </div>
               <el-tooltip effect="dark" placement="right" popper-class="max-w-200">
                 <template #content>

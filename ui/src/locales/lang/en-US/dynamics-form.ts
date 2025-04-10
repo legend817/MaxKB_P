@@ -1,6 +1,7 @@
 export default {
   input_type_list: {
     TextInput: 'Input',
+    PasswordInput: 'Password',
     Slider: 'Slider',
     SwitchInput: 'Switch',
     SingleSelect: 'Single Select',

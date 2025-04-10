@@ -40,6 +40,14 @@ def zip_dir(zip_path, output=None):
     zip.close()
 
 
+def is_valid_uuid(s):
+    try:
+        uuid.UUID(s)
+        return True
+    except ValueError:
+        return False
+
+
 def write_image(zip_path: str, image_list: List[str]):
     for image in image_list:
         search = re.search("\(.*\)", image)
@@ -47,6 +55,9 @@ def write_image(zip_path: str, image_list: List[str]):
             text = search.group()
             if text.startswith('(/api/file/'):
                 r = text.replace('(/api/file/', '').replace(')', '')
+                r = r.strip().split(" ")[0]
+                if not is_valid_uuid(r):
+                    break
                 file = QuerySet(File).filter(id=r).first()
                 if file is None:
                     break
@@ -58,6 +69,9 @@ def write_image(zip_path: str, image_list: List[str]):
                     f.write(file.get_byte())
             else:
                 r = text.replace('(/api/image/', '').replace(')', '')
+                r = r.strip().split(" ")[0]
+                if not is_valid_uuid(r):
+                    break
                 image_model = QuerySet(Image).filter(id=r).first()
                 if image_model is None:
                     break
@@ -208,3 +222,26 @@ def get_embedding_model_id_by_dataset_id_list(dataset_id_list: List):
     if len(dataset_list) == 0:
         raise Exception(_('Knowledge base setting error, please reset the knowledge base'))
     return str(dataset_list[0].embedding_mode_id)
+
+
+class GenerateRelatedSerializer(ApiMixin, serializers.Serializer):
+    model_id = serializers.UUIDField(required=True, error_messages=ErrMessage.uuid(_('Model id')))
+    prompt = serializers.CharField(required=True, error_messages=ErrMessage.uuid(_('Prompt word')))
+    state_list = serializers.ListField(required=False, child=serializers.CharField(required=True),
+                                       error_messages=ErrMessage.list("state list"))
+
+    @staticmethod
+    def get_request_body_api():
+        return openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'model_id': openapi.Schema(type=openapi.TYPE_STRING,
+                                           title=_('Model id'),
+                                           description=_('Model id')),
+                'prompt': openapi.Schema(type=openapi.TYPE_STRING, title=_('Prompt word'),
+                                         description=_("Prompt word")),
+                'state_list': openapi.Schema(type=openapi.TYPE_ARRAY,
+                                             items=openapi.Schema(type=openapi.TYPE_STRING),
+                                             title=_('state list'))
+            }
+        )

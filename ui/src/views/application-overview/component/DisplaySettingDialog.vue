@@ -4,6 +4,7 @@
     v-model="dialogVisible"
     :close-on-click-modal="false"
     :close-on-press-escape="false"
+    width="550"
   >
     <el-form label-position="top" ref="displayFormRef" :model="form">
       <el-form-item>
@@ -59,7 +60,8 @@ const emit = defineEmits(['refresh'])
 
 const displayFormRef = ref()
 const form = ref<any>({
-  show_source: false
+  show_source: false,
+  language: ''
 })
 
 const detail = ref<any>(null)
@@ -70,7 +72,8 @@ const loading = ref(false)
 watch(dialogVisible, (bool) => {
   if (!bool) {
     form.value = {
-      show_source: false
+      show_source: false,
+      language: ''
     }
   }
 })
@@ -78,10 +81,6 @@ const open = (data: any, content: any) => {
   detail.value = content
   form.value.show_source = data.show_source
   form.value.language = data.language
-  if (!form.value.language) {
-    form.value.language = getBrowserLang()
-  }
-
   dialogVisible.value = true
 }
 
@@ -89,11 +88,7 @@ const submit = async (formEl: FormInstance | undefined) => {
   if (!formEl) return
   await formEl.validate((valid, fields) => {
     if (valid) {
-      const obj = {
-        show_source: form.value.show_source,
-        language: form.value.language
-      }
-      applicationApi.putAccessToken(id as string, obj, loading).then((res) => {
+      applicationApi.putAccessToken(id as string, form.value, loading).then((res) => {
         emit('refresh')
         // @ts-ignore
         MsgSuccess(t('common.settingSuccess'))
@@ -105,4 +100,4 @@ const submit = async (formEl: FormInstance | undefined) => {
 
 defineExpose({ open })
 </script>
-<style lang="scss" scope></style>
+<style lang="scss" scoped></style>

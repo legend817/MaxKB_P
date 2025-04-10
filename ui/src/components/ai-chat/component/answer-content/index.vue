@@ -1,12 +1,18 @@
 <template>
   <div class="item-content mb-16 lighter">
     <template v-for="(answer_text, index) in answer_text_list" :key="index">
-      <div class="avatar">
-        <img v-if="application.avatar" :src="application.avatar" height="32px" width="32px" />
-        <LogoIcon v-else height="32px" width="32px" />
+      <div class="avatar mr-8" v-if="showAvatar">
+        <img v-if="application.avatar" :src="application.avatar" height="28px" width="28px" />
+        <LogoIcon v-else height="28px" width="28px" />
       </div>
-      <div class="content" @click.stop @mouseup="openControl">
-        <el-card shadow="always" class="dialog-card mb-8">
+      <div
+        class="content"
+        @mouseup="openControl"
+        :style="{
+          'padding-right': showUserAvatar ? 'var(--padding-left)' : '0'
+        }"
+      >
+        <el-card shadow="always" class="mb-8 border-r-8" style="--el-card-padding: 6px 16px">
           <MdRenderer
             v-if="
               (chatRecord.write_ed === undefined || chatRecord.write_ed === true) &&
@@ -27,20 +33,28 @@
               :send-message="chatMessage"
             ></MdRenderer>
           </template>
-          <span v-else-if="chatRecord.is_stop" shadow="always" class="dialog-card">
+          <p v-else-if="chatRecord.is_stop" shadow="always" style="margin: 0.5rem 0">
             {{ $t('chat.tip.stopAnswer') }}
-          </span>
-          <span v-else shadow="always" class="dialog-card">
+          </p>
+          <p v-else shadow="always" style="margin: 0.5rem 0">
             {{ $t('chat.tip.answerLoading') }} <span class="dotting"></span>
-          </span>
+          </p>
           <!-- 知识来源 -->
-          <div v-if="showSource(chatRecord) && index === chatRecord.answer_text_list.length - 1">
-            <KnowledgeSource :data="chatRecord" :type="application.type" />
-          </div>
+          <KnowledgeSource
+            :data="chatRecord"
+            :type="application.type"
+            v-if="showSource(chatRecord) && index === chatRecord.answer_text_list.length - 1"
+          />
         </el-card>
       </div>
     </template>
-    <div class="content">
+    <div
+      class="content"
+      :style="{
+        'padding-left': showAvatar ? 'var(--padding-left)' : '0',
+        'padding-right': showUserAvatar ? 'var(--padding-left)' : '0'
+      }"
+    >
       <OperationButton
         :type="type"
         :application="application"
@@ -61,6 +75,7 @@ import OperationButton from '@/components/ai-chat/component/operation-button/ind
 import { type chatType } from '@/api/type/application'
 import { computed } from 'vue'
 import bus from '@/bus'
+import useStore from '@/stores'
 const props = defineProps<{
   chatRecord: chatType
   application: any
@@ -70,19 +85,28 @@ const props = defineProps<{
   type: 'log' | 'ai-chat' | 'debug-ai-chat'
 }>()
 
+const { user } = useStore()
+
 const emit = defineEmits(['update:chatRecord'])
 
+const showAvatar = computed(() => {
+  return user.isEnterprise() ? props.application.show_avatar : true
+})
+const showUserAvatar = computed(() => {
+  return user.isEnterprise() ? props.application.show_user_avatar : true
+})
 const chatMessage = (question: string, type: 'old' | 'new', other_params_data?: any) => {
   if (type === 'old') {
     add_answer_text_list(props.chatRecord.answer_text_list)
     props.sendMessage(question, other_params_data, props.chatRecord)
+    props.chatManagement.open(props.chatRecord.id)
     props.chatManagement.write(props.chatRecord.id)
   } else {
     props.sendMessage(question, other_params_data)
   }
 }
 const add_answer_text_list = (answer_text_list: Array<any>) => {
-  answer_text_list.push([ ])
+  answer_text_list.push([])
 }
 
 const openControl = (event: any) => {
@@ -122,7 +146,7 @@ function showSource(row: any) {
   return false
 }
 const regenerationChart = (chat: chatType) => {
-  props.sendMessage(chat.problem_text, { rechat: true })
+  props.sendMessage(chat.problem_text, { re_chat: true })
 }
 const stopChat = (chat: chatType) => {
   props.chatManagement.stop(chat.id)

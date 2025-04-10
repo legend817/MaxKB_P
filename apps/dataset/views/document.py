@@ -7,6 +7,7 @@
     @desc:
 """
 
+from django.utils.translation import gettext_lazy as _
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser
@@ -15,12 +16,14 @@ from rest_framework.views import Request
 
 from common.auth import TokenAuth, has_permissions
 from common.constants.permission_constants import Permission, Group, Operate, CompareConstants
+from common.log.log import log
 from common.response import result
 from common.util.common import query_params_to_single_dict
 from dataset.serializers.common_serializers import BatchSerializer
 from dataset.serializers.document_serializers import DocumentSerializers, DocumentWebInstanceSerializer
 from dataset.swagger_api.document_api import DocumentApi
-from django.utils.translation import gettext_lazy as _
+from dataset.views.common import get_dataset_document_operation_object, get_dataset_operation_object, \
+    get_document_operation_object_batch, get_document_operation_object
 
 
 class Template(APIView):
@@ -60,6 +63,11 @@ class WebDocument(APIView):
     @has_permissions(
         lambda r, k: Permission(group=Group.DATASET, operate=Operate.MANAGE,
                                 dynamic_tag=k.get('dataset_id')))
+    @log(menu='document', operate="Create Web site documents",
+         get_operation_object=lambda r, keywords: get_dataset_document_operation_object(
+             get_dataset_operation_object(keywords.get('dataset_id')),
+             {'name': f'[{",".join([url for url in r.data.get("source_url_list", [])])}]',
+              'document_list': [{'name': url} for url in r.data.get("source_url_list", [])]}))
     def post(self, request: Request, dataset_id: str):
         return result.success(
             DocumentSerializers.Create(data={'dataset_id': dataset_id}).save_web(request.data, with_valid=True))
@@ -78,6 +86,11 @@ class QaDocument(APIView):
     @has_permissions(
         lambda r, k: Permission(group=Group.DATASET, operate=Operate.MANAGE,
                                 dynamic_tag=k.get('dataset_id')))
+    @log(menu='document', operate="Import QA and create documentation",
+         get_operation_object=lambda r, keywords: get_dataset_document_operation_object(
+             get_dataset_operation_object(keywords.get('dataset_id')),
+             {'name': f'[{",".join([file.name for file in r.FILES.getlist("file")])}]',
+              'document_list': [{'name': file.name} for file in r.FILES.getlist("file")]}))
     def post(self, request: Request, dataset_id: str):
         return result.success(
             DocumentSerializers.Create(data={'dataset_id': dataset_id}).save_qa(
@@ -98,6 +111,11 @@ class TableDocument(APIView):
     @has_permissions(
         lambda r, k: Permission(group=Group.DATASET, operate=Operate.MANAGE,
                                 dynamic_tag=k.get('dataset_id')))
+    @log(menu='document', operate="Import tables and create documents",
+         get_operation_object=lambda r, keywords: get_dataset_document_operation_object(
+             get_dataset_operation_object(keywords.get('dataset_id')),
+             {'name': f'[{",".join([file.name for file in r.FILES.getlist("file")])}]',
+              'document_list': [{'name': file.name} for file in r.FILES.getlist("file")]}))
     def post(self, request: Request, dataset_id: str):
         return result.success(
             DocumentSerializers.Create(data={'dataset_id': dataset_id}).save_table(
@@ -118,6 +136,10 @@ class Document(APIView):
     @has_permissions(
         lambda r, k: Permission(group=Group.DATASET, operate=Operate.MANAGE,
                                 dynamic_tag=k.get('dataset_id')))
+    @log(menu='document', operate="Create document",
+         get_operation_object=lambda r, keywords: get_dataset_document_operation_object(
+             get_dataset_operation_object(keywords.get('dataset_id')),
+             {'name': r.data.get('name')}))
     def post(self, request: Request, dataset_id: str):
         return result.success(
             DocumentSerializers.Create(data={'dataset_id': dataset_id}).save(request.data, with_valid=True))
@@ -151,6 +173,10 @@ class Document(APIView):
         @has_permissions(
             lambda r, k: Permission(group=Group.DATASET, operate=Operate.MANAGE,
                                     dynamic_tag=k.get('dataset_id')))
+        @log(menu='document', operate="Modify document hit processing methods in batches",
+             get_operation_object=lambda r, keywords: get_dataset_document_operation_object(
+                 get_dataset_operation_object(keywords.get('dataset_id')),
+                 get_document_operation_object_batch(r.data.get('id_list'))))
         def put(self, request: Request, dataset_id: str):
             return result.success(
                 DocumentSerializers.Batch(data={'dataset_id': dataset_id}).batch_edit_hit_handling(request.data))
@@ -170,6 +196,12 @@ class Document(APIView):
         @has_permissions(
             lambda r, k: Permission(group=Group.DATASET, operate=Operate.MANAGE,
                                     dynamic_tag=k.get('dataset_id')))
+        @log(menu='document', operate="Create documents in batches",
+             get_operation_object=lambda r, keywords: get_dataset_document_operation_object(
+                 get_dataset_operation_object(keywords.get('dataset_id')),
+                 {'name': f'[{",".join([document.get("name") for document in r.data])}]',
+                  'document_list': r.data})
+             )
         def post(self, request: Request, dataset_id: str):
             return result.success(DocumentSerializers.Batch(data={'dataset_id': dataset_id}).batch_save(request.data))
 
@@ -184,6 +216,11 @@ class Document(APIView):
         @has_permissions(
             lambda r, k: Permission(group=Group.DATASET, operate=Operate.MANAGE,
                                     dynamic_tag=k.get('dataset_id')))
+        @log(menu='document', operate="Batch sync documents",
+             get_operation_object=lambda r, keywords: get_dataset_document_operation_object(
+                 get_dataset_operation_object(keywords.get('dataset_id')),
+                 get_document_operation_object_batch(r.data.get('id_list')))
+             )
         def put(self, request: Request, dataset_id: str):
             return result.success(DocumentSerializers.Batch(data={'dataset_id': dataset_id}).batch_sync(request.data))
 
@@ -198,6 +235,10 @@ class Document(APIView):
         @has_permissions(
             lambda r, k: Permission(group=Group.DATASET, operate=Operate.MANAGE,
                                     dynamic_tag=k.get('dataset_id')))
+        @log(menu='document', operate="Delete documents in batches",
+             get_operation_object=lambda r, keywords: get_dataset_document_operation_object(
+                 get_dataset_operation_object(keywords.get('dataset_id')),
+                 get_document_operation_object_batch(r.data.get('id_list'))))
         def delete(self, request: Request, dataset_id: str):
             return result.success(DocumentSerializers.Batch(data={'dataset_id': dataset_id}).batch_delete(request.data))
 
@@ -214,6 +255,11 @@ class Document(APIView):
         @has_permissions(
             lambda r, k: Permission(group=Group.DATASET, operate=Operate.MANAGE,
                                     dynamic_tag=k.get('dataset_id')))
+        @log(menu='document', operate="Synchronize web site types",
+             get_operation_object=lambda r, keywords: get_dataset_document_operation_object(
+                 get_dataset_operation_object(keywords.get('dataset_id')),
+                 get_document_operation_object(keywords.get('document_id'))
+             ))
         def put(self, request: Request, dataset_id: str, document_id: str):
             return result.success(
                 DocumentSerializers.Sync(data={'document_id': document_id, 'dataset_id': dataset_id}).sync(
@@ -233,6 +279,11 @@ class Document(APIView):
         @has_permissions(
             lambda r, k: Permission(group=Group.DATASET, operate=Operate.MANAGE,
                                     dynamic_tag=k.get('dataset_id')))
+        @log(menu='document', operate="Cancel task",
+             get_operation_object=lambda r, keywords: get_dataset_document_operation_object(
+                 get_dataset_operation_object(keywords.get('dataset_id')),
+                 get_document_operation_object(keywords.get('document_id'))
+             ))
         def put(self, request: Request, dataset_id: str, document_id: str):
             return result.success(
                 DocumentSerializers.Operate(data={'document_id': document_id, 'dataset_id': dataset_id}).cancel(
@@ -253,6 +304,12 @@ class Document(APIView):
             @has_permissions(
                 lambda r, k: Permission(group=Group.DATASET, operate=Operate.MANAGE,
                                         dynamic_tag=k.get('dataset_id')))
+            @log(menu='document', operate="Cancel tasks in batches",
+                 get_operation_object=lambda r, keywords: get_dataset_document_operation_object(
+                     get_dataset_operation_object(keywords.get('dataset_id')),
+                     get_document_operation_object_batch(r.data.get('id_list'))
+                 )
+                 )
             def put(self, request: Request, dataset_id: str):
                 return result.success(
                     DocumentSerializers.Batch(data={'dataset_id': dataset_id}).batch_cancel(request.data))
@@ -271,6 +328,12 @@ class Document(APIView):
         @has_permissions(
             lambda r, k: Permission(group=Group.DATASET, operate=Operate.MANAGE,
                                     dynamic_tag=k.get('dataset_id')))
+        @log(menu='document', operate="Refresh document vector library",
+             get_operation_object=lambda r, keywords: get_dataset_document_operation_object(
+                 get_dataset_operation_object(keywords.get('dataset_id')),
+                 get_document_operation_object(keywords.get('document_id'))
+             )
+             )
         def put(self, request: Request, dataset_id: str, document_id: str):
             return result.success(
                 DocumentSerializers.Operate(data={'document_id': document_id, 'dataset_id': dataset_id}).refresh(
@@ -291,6 +354,12 @@ class Document(APIView):
         @has_permissions(
             lambda r, k: Permission(group=Group.DATASET, operate=Operate.MANAGE,
                                     dynamic_tag=k.get('dataset_id')))
+        @log(menu='document', operate="Batch refresh document vector library",
+             get_operation_object=lambda r, keywords: get_dataset_document_operation_object(
+                 get_dataset_operation_object(keywords.get('dataset_id')),
+                 get_document_operation_object_batch(r.data.get('id_list'))
+             )
+             )
         def put(self, request: Request, dataset_id: str):
             return result.success(
                 DocumentSerializers.Batch(data={'dataset_id': dataset_id}).batch_refresh(request.data))
@@ -313,6 +382,12 @@ class Document(APIView):
                                     dynamic_tag=k.get('target_dataset_id')),
             compare=CompareConstants.AND
         )
+        @log(menu='document', operate="Migrate documents in batches",
+             get_operation_object=lambda r, keywords: get_dataset_document_operation_object(
+                 get_dataset_operation_object(keywords.get('dataset_id')),
+                 get_document_operation_object_batch(r.data)
+             )
+             )
         def put(self, request: Request, dataset_id: str, target_dataset_id: str):
             return result.success(
                 DocumentSerializers.Migrate(
@@ -332,6 +407,12 @@ class Document(APIView):
         @has_permissions(
             lambda r, k: Permission(group=Group.DATASET, operate=Operate.MANAGE,
                                     dynamic_tag=k.get('dataset_id')))
+        @log(menu='document', operate="Export document",
+             get_operation_object=lambda r, keywords: get_dataset_document_operation_object(
+                 get_dataset_operation_object(keywords.get('dataset_id')),
+                 get_document_operation_object(keywords.get('document_id'))
+             )
+             )
         def get(self, request: Request, dataset_id: str, document_id: str):
             return DocumentSerializers.Operate(data={'document_id': document_id, 'dataset_id': dataset_id}).export()
 
@@ -346,6 +427,12 @@ class Document(APIView):
         @has_permissions(
             lambda r, k: Permission(group=Group.DATASET, operate=Operate.MANAGE,
                                     dynamic_tag=k.get('dataset_id')))
+        @log(menu='document', operate="Export Zip document",
+             get_operation_object=lambda r, keywords: get_dataset_document_operation_object(
+                 get_dataset_operation_object(keywords.get('dataset_id')),
+                 get_document_operation_object(keywords.get('document_id'))
+             )
+             )
         def get(self, request: Request, dataset_id: str, document_id: str):
             return DocumentSerializers.Operate(data={'document_id': document_id, 'dataset_id': dataset_id}).export_zip()
 
@@ -377,6 +464,12 @@ class Document(APIView):
         @has_permissions(
             lambda r, k: Permission(group=Group.DATASET, operate=Operate.MANAGE,
                                     dynamic_tag=k.get('dataset_id')))
+        @log(menu='document', operate="Modify document",
+             get_operation_object=lambda r, keywords: get_dataset_document_operation_object(
+                 get_dataset_operation_object(keywords.get('dataset_id')),
+                 get_document_operation_object(keywords.get('document_id'))
+             )
+             )
         def put(self, request: Request, dataset_id: str, document_id: str):
             return result.success(
                 DocumentSerializers.Operate(data={'document_id': document_id, 'dataset_id': dataset_id}).edit(
@@ -392,6 +485,12 @@ class Document(APIView):
         @has_permissions(
             lambda r, k: Permission(group=Group.DATASET, operate=Operate.MANAGE,
                                     dynamic_tag=k.get('dataset_id')))
+        @log(menu='document', operate="Delete document",
+             get_operation_object=lambda r, keywords: get_dataset_document_operation_object(
+                 get_dataset_operation_object(keywords.get('dataset_id')),
+                 get_document_operation_object(keywords.get('document_id'))
+             )
+             )
         def delete(self, request: Request, dataset_id: str, document_id: str):
             operate = DocumentSerializers.Operate(data={'document_id': document_id, 'dataset_id': dataset_id})
             operate.is_valid(raise_exception=True)
@@ -456,6 +555,12 @@ class Document(APIView):
         @has_permissions(
             lambda r, k: Permission(group=Group.DATASET, operate=Operate.MANAGE,
                                     dynamic_tag=k.get('dataset_id')))
+        @log(menu='document', operate="Batch generate related documents",
+             get_operation_object=lambda r, keywords: get_dataset_document_operation_object(
+                 get_dataset_operation_object(keywords.get('dataset_id')),
+                 get_document_operation_object_batch(r.data.get('document_id_list'))
+             )
+             )
         def put(self, request: Request, dataset_id: str):
             return result.success(DocumentSerializers.BatchGenerateRelated(data={'dataset_id': dataset_id})
                                   .batch_generate_related(request.data))

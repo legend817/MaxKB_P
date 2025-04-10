@@ -115,6 +115,10 @@ def write_context(node_variable: Dict, workflow_variable: Dict, node: INode, wor
                                          'prompt_tokens': response.get('prompt_tokens')}}
     answer = response.get('content', '') or "抱歉，没有查找到相关内容，请重新描述您的问题或提供更多信息。"
     reasoning_content = response.get('reasoning_content', '')
+    answer_list = response.get('answer_list', [])
+    node_variable['application_node_dict'] = {answer.get('real_node_id'): {**answer, 'index': index} for answer, index
+                                              in
+                                              zip(answer_list, range(len(answer_list)))}
     _write_context(node_variable, workflow_variable, node, workflow, answer, reasoning_content)
 
 
@@ -174,7 +178,7 @@ class BaseApplicationNode(IApplicationNode):
         current_chat_id = string_to_uuid(chat_id + application_id)
         Chat.objects.get_or_create(id=current_chat_id, defaults={
             'application_id': application_id,
-            'abstract': message
+            'abstract': message[0:1024]
         })
         if app_document_list is None:
             app_document_list = []
@@ -220,20 +224,25 @@ class BaseApplicationNode(IApplicationNode):
     def get_details(self, index: int, **kwargs):
         global_fields = []
         for api_input_field in self.node_params_serializer.data.get('api_input_field_list', []):
+            value = api_input_field.get('value', [''])[0] if api_input_field.get('value') else ''
             global_fields.append({
                 'label': api_input_field['variable'],
                 'key': api_input_field['variable'],
                 'value': self.workflow_manage.get_reference_field(
-                    api_input_field['value'][0],
-                    api_input_field['value'][1:])
+                    value,
+                    api_input_field['value'][1:]
+                ) if value != '' else ''
             })
+
         for user_input_field in self.node_params_serializer.data.get('user_input_field_list', []):
+            value = user_input_field.get('value', [''])[0] if user_input_field.get('value') else ''
             global_fields.append({
                 'label': user_input_field['label'],
                 'key': user_input_field['field'],
                 'value': self.workflow_manage.get_reference_field(
-                    user_input_field['value'][0],
-                    user_input_field['value'][1:])
+                    value,
+                    user_input_field['value'][1:]
+                ) if value != '' else ''
             })
         return {
             'name': self.node.properties.get('stepName'),

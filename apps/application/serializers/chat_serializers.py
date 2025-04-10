@@ -13,7 +13,7 @@ import uuid
 from functools import reduce
 from io import BytesIO
 from typing import Dict
-
+import pytz
 import openpyxl
 from django.core import validators
 from django.core.cache import caches
@@ -46,6 +46,7 @@ from embedding.task import embedding_by_paragraph, embedding_by_paragraph_list
 from setting.models import Model
 from setting.models_provider import get_model_credential
 from smartdoc.conf import PROJECT_DIR
+from smartdoc.settings import TIME_ZONE
 
 chat_cache = caches['chat_cache']
 
@@ -66,6 +67,10 @@ def valid_model_params_setting(model_id, model_params_setting):
     credential.get_model_params_setting_form(model.model_name).valid_form(model_params_setting)
 
 
+class ReAbstractInstanceSerializers(serializers.Serializer):
+    abstract = serializers.CharField(required=True, error_messages=ErrMessage.char(_("abstract")))
+
+
 class ChatSerializers(serializers.Serializer):
     class Operate(serializers.Serializer):
         chat_id = serializers.UUIDField(required=True, error_messages=ErrMessage.uuid(_("Conversation ID")))
@@ -76,6 +81,15 @@ class ChatSerializers(serializers.Serializer):
                 self.is_valid(raise_exception=True)
             QuerySet(Chat).filter(id=self.data.get('chat_id'), application_id=self.data.get('application_id')).update(
                 is_deleted=True)
+            return True
+
+        def re_abstract(self, instance, with_valid=True):
+            if with_valid:
+                self.is_valid(raise_exception=True)
+                ReAbstractInstanceSerializers(data=instance).is_valid(raise_exception=True)
+
+            QuerySet(Chat).filter(id=self.data.get('chat_id'), application_id=self.data.get('application_id')).update(
+                abstract=instance.get('abstract'))
             return True
 
         def delete(self, with_valid=True):
@@ -195,7 +209,6 @@ class ChatSerializers(serializers.Serializer):
                                                                                               [])) for
                  key, node in search_dataset_node_list])
             improve_paragraph_list = row.get('improve_paragraph_list')
-
             vote_status_map = {'-1': '未投票', '0': '赞同', '1': '反对'}
             return [str(row.get('chat_id')), row.get('abstract'), row.get('problem_text'), padding_problem_text,
                     row.get('answer_text'), vote_status_map.get(row.get('vote_status')), reference_paragraph_len,
@@ -203,8 +216,9 @@ class ChatSerializers(serializers.Serializer):
                     "\n".join([
                         f"{improve_paragraph_list[index].get('title')}\n{improve_paragraph_list[index].get('content')}"
                         for index in range(len(improve_paragraph_list))]),
+                    row.get('asker').get('user_name'),
                     row.get('message_tokens') + row.get('answer_tokens'), row.get('run_time'),
-                    str(row.get('create_time').strftime('%Y-%m-%d %H:%M:%S')
+                    str(row.get('create_time').astimezone(pytz.timezone(TIME_ZONE)).strftime('%Y-%m-%d %H:%M:%S')
                         )]
 
         def export(self, data, with_valid=True):
@@ -229,7 +243,8 @@ class ChatSerializers(serializers.Serializer):
                            gettext('answer'), gettext('User feedback'),
                            gettext('Reference segment number'),
                            gettext('Section title + content'),
-                           gettext('Annotation'), gettext('Consuming tokens'), gettext('Time consumed (s)'),
+                           gettext('Annotation'), gettext('USER'), gettext('Consuming tokens'),
+                           gettext('Time consumed (s)'),
                            gettext('Question Time')]
                 for col_idx, header in enumerate(headers, 1):
                     cell = worksheet.cell(row=1, column=col_idx)
@@ -243,6 +258,10 @@ class ChatSerializers(serializers.Serializer):
                             cell = worksheet.cell(row=row_idx, column=col_idx)
                             if isinstance(value, str):
                                 value = re.sub(ILLEGAL_CHARACTERS_RE, '', value)
+                            if isinstance(value, datetime.datetime):
+                                eastern = pytz.timezone(TIME_ZONE)
+                                c = datetime.timezone(eastern._utcoffset)
+                                value = value.astimezone(c)
                             cell.value = value
 
                 output = BytesIO()
@@ -455,7 +474,7 @@ class ChatRecordSerializer(serializers.Serializer):
     class Query(serializers.Serializer):
         application_id = serializers.UUIDField(required=True)
         chat_id = serializers.UUIDField(required=True)
-        order_asc = serializers.BooleanField(required=False)
+        order_asc = serializers.BooleanField(required=False, allow_null=True)
 
         def list(self, with_valid=True):
             if with_valid:

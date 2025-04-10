@@ -8,17 +8,34 @@
               v-if="datasetDetail.type === '0'"
               type="primary"
               @click="router.push({ path: '/dataset/upload', query: { id: id } })"
-              >{{ $t('views.document.uploadDocument') }}</el-button
-            >
-            <el-button v-if="datasetDetail.type === '1'" type="primary" @click="importDoc">{{
-              $t('views.document.importDocument')
-            }}</el-button>
+              >{{ $t('views.document.uploadDocument') }}
+            </el-button>
+            <el-button v-if="datasetDetail.type === '1'" type="primary" @click="importDoc"
+              >{{ $t('views.document.importDocument') }}
+            </el-button>
             <el-button
               @click="syncMulDocument"
               :disabled="multipleSelection.length === 0"
               v-if="datasetDetail.type === '1'"
-              >{{ $t('views.document.syncDocument') }}</el-button
-            >
+              >{{ $t('views.document.syncDocument') }}
+            </el-button>
+            <el-button
+              v-if="datasetDetail.type === '2'"
+              type="primary"
+              @click="
+                router.push({
+                  path: '/dataset/import',
+                  query: { id: id, folder_token: datasetDetail.meta.folder_token }
+                })
+              "
+              >{{ $t('views.document.importDocument') }}
+            </el-button>
+            <el-button
+              @click="syncLarkMulDocument"
+              :disabled="multipleSelection.length === 0"
+              v-if="datasetDetail.type === '2'"
+              >{{ $t('views.document.syncDocument') }}
+            </el-button>
             <el-button @click="openDatasetDialog()" :disabled="multipleSelection.length === 0">
               {{ $t('views.document.setting.migration') }}
             </el-button>
@@ -58,6 +75,7 @@
           @creatQuick="creatQuickHandle"
           @row-click="rowClickHandle"
           @selection-change="handleSelectionChange"
+          @sort-change="handleSortChange"
           v-loading="loading"
           :row-key="(row: any) => row.id"
           :storeKey="storeKey"
@@ -77,6 +95,7 @@
             :label="$t('views.document.table.char_length')"
             align="right"
             min-width="90"
+            sortable
           >
             <template #default="{ row }">
               {{ numberFormat(row.char_length) }}
@@ -87,6 +106,7 @@
             :label="$t('views.document.table.paragraph')"
             align="right"
             min-width="90"
+            sortable
           />
           <el-table-column prop="status" :label="$t('views.document.fileStatus.label')" width="130">
             <template #header>
@@ -98,7 +118,9 @@
                     link
                     :type="filterMethod['status'] ? 'primary' : ''"
                   >
-                    <el-icon><Filter /></el-icon>
+                    <el-icon>
+                      <Filter />
+                    </el-icon>
                   </el-button>
                   <template #dropdown>
                     <el-dropdown-menu style="width: 100px">
@@ -106,20 +128,20 @@
                         :class="filterMethod['status'] ? '' : 'is-active'"
                         :command="beforeCommand('status', '')"
                         class="justify-center"
-                        >{{ $t('views.document.table.all') }}</el-dropdown-item
-                      >
+                        >{{ $t('views.document.table.all') }}
+                      </el-dropdown-item>
                       <el-dropdown-item
                         :class="filterMethod['status'] === State.SUCCESS ? 'is-active' : ''"
                         class="justify-center"
                         :command="beforeCommand('status', State.SUCCESS)"
-                        >{{ $t('views.document.fileStatus.SUCCESS') }}</el-dropdown-item
-                      >
+                        >{{ $t('views.document.fileStatus.SUCCESS') }}
+                      </el-dropdown-item>
                       <el-dropdown-item
                         :class="filterMethod['status'] === State.FAILURE ? 'is-active' : ''"
                         class="justify-center"
                         :command="beforeCommand('status', State.FAILURE)"
-                        >{{ $t('views.document.fileStatus.FAILURE') }}</el-dropdown-item
-                      >
+                        >{{ $t('views.document.fileStatus.FAILURE') }}
+                      </el-dropdown-item>
                       <el-dropdown-item
                         :class="
                           filterMethod['status'] === State.STARTED &&
@@ -129,14 +151,14 @@
                         "
                         class="justify-center"
                         :command="beforeCommand('status', State.STARTED, TaskType.EMBEDDING)"
-                        >{{ $t('views.document.fileStatus.EMBEDDING') }}</el-dropdown-item
-                      >
+                        >{{ $t('views.document.fileStatus.EMBEDDING') }}
+                      </el-dropdown-item>
                       <el-dropdown-item
                         :class="filterMethod['status'] === State.PENDING ? 'is-active' : ''"
                         class="justify-center"
                         :command="beforeCommand('status', State.PENDING)"
-                        >{{ $t('views.document.fileStatus.PENDING') }}</el-dropdown-item
-                      >
+                        >{{ $t('views.document.fileStatus.PENDING') }}
+                      </el-dropdown-item>
                       <el-dropdown-item
                         :class="
                           filterMethod['status'] === State.STARTED &&
@@ -146,8 +168,8 @@
                         "
                         class="justify-center"
                         :command="beforeCommand('status', State.STARTED, TaskType.GENERATE_PROBLEM)"
-                        >{{ $t('views.document.fileStatus.GENERATE') }}</el-dropdown-item
-                      >
+                        >{{ $t('views.document.fileStatus.GENERATE') }}
+                      </el-dropdown-item>
                     </el-dropdown-menu>
                   </template>
                 </el-dropdown>
@@ -167,7 +189,9 @@
                     link
                     :type="filterMethod['is_active'] ? 'primary' : ''"
                   >
-                    <el-icon><Filter /></el-icon>
+                    <el-icon>
+                      <Filter />
+                    </el-icon>
                   </el-button>
                   <template #dropdown>
                     <el-dropdown-menu style="width: 100px">
@@ -175,20 +199,20 @@
                         :class="filterMethod['is_active'] === '' ? 'is-active' : ''"
                         :command="beforeCommand('is_active', '')"
                         class="justify-center"
-                        >{{ $t('views.document.table.all') }}</el-dropdown-item
-                      >
+                        >{{ $t('views.document.table.all') }}
+                      </el-dropdown-item>
                       <el-dropdown-item
                         :class="filterMethod['is_active'] === true ? 'is-active' : ''"
                         class="justify-center"
                         :command="beforeCommand('is_active', true)"
-                        >{{ $t('views.document.enableStatus.enable') }}</el-dropdown-item
-                      >
+                        >{{ $t('views.document.enableStatus.enable') }}
+                      </el-dropdown-item>
                       <el-dropdown-item
                         :class="filterMethod['is_active'] === false ? 'is-active' : ''"
                         class="justify-center"
                         :command="beforeCommand('is_active', false)"
-                        >{{ $t('views.document.enableStatus.close') }}</el-dropdown-item
-                      >
+                        >{{ $t('views.document.enableStatus.close') }}
+                      </el-dropdown-item>
                     </el-dropdown-menu>
                   </template>
                 </el-dropdown>
@@ -215,7 +239,9 @@
                     link
                     :type="filterMethod['hit_handling_method'] ? 'primary' : ''"
                   >
-                    <el-icon><Filter /></el-icon>
+                    <el-icon>
+                      <Filter />
+                    </el-icon>
                   </el-button>
                   <template #dropdown>
                     <el-dropdown-menu style="width: 150px">
@@ -223,15 +249,15 @@
                         :class="filterMethod['hit_handling_method'] ? '' : 'is-active'"
                         :command="beforeCommand('hit_handling_method', '')"
                         class="justify-center"
-                        >{{ $t('views.document.table.all') }}</el-dropdown-item
-                      >
+                        >{{ $t('views.document.table.all') }}
+                      </el-dropdown-item>
                       <template v-for="(value, key) of hitHandlingMethod" :key="key">
                         <el-dropdown-item
                           :class="filterMethod['hit_handling_method'] === key ? 'is-active' : ''"
                           class="justify-center"
                           :command="beforeCommand('hit_handling_method', key)"
-                          >{{ $t(value) }}</el-dropdown-item
-                        >
+                          >{{ $t(value) }}
+                        </el-dropdown-item>
                       </template>
                     </el-dropdown-menu>
                   </template>
@@ -242,7 +268,7 @@
               {{ $t(hitHandlingMethod[row.hit_handling_method as keyof typeof hitHandlingMethod]) }}
             </template>
           </el-table-column>
-          <el-table-column prop="create_time" :label="$t('common.createTime')" width="175">
+          <el-table-column prop="create_time" :label="$t('common.createTime')" width="175" sortable>
             <template #default="{ row }">
               {{ datetimeFormat(row.create_time) }}
             </template>
@@ -251,6 +277,7 @@
             prop="update_time"
             :label="$t('views.document.table.updateTime')"
             width="175"
+            sortable
           >
             <template #default="{ row }">
               {{ datetimeFormat(row.update_time) }}
@@ -338,7 +365,7 @@
                   </el-dropdown>
                 </span>
               </div>
-              <div v-if="datasetDetail.type === '1'">
+              <div v-if="datasetDetail.type === '1' || datasetDetail.type === '2'">
                 <span class="mr-4">
                   <el-tooltip
                     effect="dark"
@@ -436,7 +463,7 @@
       <SyncWebDialog ref="SyncWebDialogRef" @refresh="refresh" />
       <!-- 选择知识库 -->
       <SelectDatasetDialog ref="SelectDatasetDialogRef" @refresh="refreshMigrate" />
-      <GenerateRelatedDialog ref="GenerateRelatedDialogRef" @refresh="refresh" />
+      <GenerateRelatedDialog ref="GenerateRelatedDialogRef" @refresh="getList" />
     </div>
     <div class="mul-operation w-full flex" v-if="multipleSelection.length !== 0">
       <el-button :disabled="multipleSelection.length === 0" @click="cancelTaskHandle(1)">
@@ -474,6 +501,7 @@ import GenerateRelatedDialog from '@/components/generate-related-dialog/index.vu
 import EmbeddingContentDialog from '@/views/document/component/EmbeddingContentDialog.vue'
 import { TaskType, State } from '@/utils/status'
 import { t } from '@/locales'
+
 const router = useRouter()
 const route = useRoute()
 const {
@@ -509,6 +537,7 @@ const loading = ref(false)
 let interval: any
 const filterText = ref('')
 const filterMethod = ref<any>({})
+const orderBy = ref<string>('')
 const documentData = ref<any[]>([])
 const currentMouseId = ref(null)
 const datasetDetail = ref<any>({})
@@ -591,6 +620,7 @@ function beforeCommand(attr: string, val: any, task_type?: number) {
     task_type
   }
 }
+
 const cancelTask = (row: any, task_type: number) => {
   documentApi.cancelTask(row.dataset_id, row.id, { type: task_type }).then(() => {
     MsgSuccess(t('views.document.tip.sendMessage'))
@@ -601,6 +631,7 @@ function importDoc() {
   title.value = t('views.document.importDocument')
   ImportDocumentDialogRef.value.open()
 }
+
 function settingDoc(row: any) {
   title.value = t('common.setting')
   ImportDocumentDialogRef.value.open(row)
@@ -635,6 +666,28 @@ const closeInterval = () => {
 }
 
 function syncDocument(row: any) {
+  console.log('row', row)
+  if (row.type === '1') {
+    syncWebDocument(row)
+  } else {
+    syncLarkDocument(row)
+  }
+}
+
+function syncLarkDocument(row: any) {
+  MsgConfirm(t('views.document.sync.confirmTitle'), t('views.document.sync.confirmMessage1'), {
+    confirmButtonText: t('views.document.sync.label'),
+    confirmButtonClass: 'danger'
+  })
+    .then(() => {
+      documentApi.putLarkDocumentSync(id, row.id).then(() => {
+        getList()
+      })
+    })
+    .catch(() => {})
+}
+
+function syncWebDocument(row: any) {
   if (row.meta?.source_url) {
     MsgConfirm(t('views.document.sync.confirmTitle'), t('views.document.sync.confirmMessage1'), {
       confirmButtonText: t('views.document.sync.label'),
@@ -703,12 +756,25 @@ function syncMulDocument() {
   })
 }
 
+function syncLarkMulDocument() {
+  const arr: string[] = []
+  multipleSelection.value.map((v) => {
+    if (v) {
+      arr.push(v.id)
+    }
+  })
+  documentApi.delMulLarkSyncDocument(id, arr, loading).then(() => {
+    MsgSuccess(t('views.document.sync.successMessage'))
+    getList()
+  })
+}
+
 function deleteMulDocument() {
   MsgConfirm(
     `${t('views.document.delete.confirmTitle1')} ${multipleSelection.value.length} ${t('views.document.delete.confirmTitle2')}`,
     t('views.document.delete.confirmMessage'),
     {
-      confirmButtonText: t('common.delete'),
+      confirmButtonText: t('common.confirm'),
       confirmButtonClass: 'danger'
     }
   )
@@ -744,7 +810,7 @@ function deleteDocument(row: any) {
     `${t('views.document.delete.confirmTitle3')} ${row.name} ?`,
     `${t('views.document.delete.confirmMessage1')} ${row.paragraph_count} ${t('views.document.delete.confirmMessage2')}`,
     {
-      confirmButtonText: t('common.delete'),
+      confirmButtonText: t('common.confirm'),
       confirmButtonClass: 'danger'
     }
   )
@@ -796,6 +862,7 @@ function editName(val: string, id: string) {
 function cellMouseEnter(row: any) {
   currentMouseId.value = row.id
 }
+
 function cellMouseLeave() {
   currentMouseId.value = null
 }
@@ -805,10 +872,16 @@ function handleSizeChange() {
   getList()
 }
 
+function handleSortChange({ prop, order }: { prop: string; order: string }) {
+  orderBy.value = order === 'ascending' ? prop : `-${prop}`
+  getList()
+}
+
 function getList(bool?: boolean) {
   const param = {
     ...(filterText.value && { name: filterText.value }),
-    ...filterMethod.value
+    ...filterMethod.value,
+    order_by: orderBy.value
   }
   documentApi
     .getDocument(id as string, paginationConfig.value, param, bool ? undefined : loading)
@@ -835,6 +908,7 @@ function refresh() {
 }
 
 const GenerateRelatedDialogRef = ref()
+
 function openGenerateDialog(row?: any) {
   const arr: string[] = []
   if (row) {
@@ -872,6 +946,7 @@ onBeforeUnmount(() => {
 <style lang="scss" scoped>
 .document-main {
   box-sizing: border-box;
+
   .mul-operation {
     position: fixed;
     margin-left: var(--sidebar-width);

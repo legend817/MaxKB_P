@@ -6,10 +6,12 @@
     @date：2024/7/11 18:32
     @desc:
 """
+import traceback
 from typing import Dict
 
 from django.utils.translation import gettext_lazy as _, gettext
 from langchain_core.messages import HumanMessage
+from openai import BadRequestError
 
 from common import forms
 from common.exception.app_exception import AppApiException
@@ -56,7 +58,8 @@ class OpenAILLMModelCredential(BaseForm, BaseModelCredential):
             model = provider.get_model(model_type, model_name, model_credential, **model_params)
             model.invoke([HumanMessage(content=gettext('Hello'))])
         except Exception as e:
-            if isinstance(e, AppApiException):
+            traceback.print_exc()
+            if isinstance(e, AppApiException) or isinstance(e, BadRequestError):
                 raise e
             if raise_exception:
                 raise AppApiException(ValidCode.valid_error.value,

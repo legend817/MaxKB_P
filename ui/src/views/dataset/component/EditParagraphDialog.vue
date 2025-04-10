@@ -31,6 +31,7 @@
               @change="addProblemHandle"
               @blur="isAddProblem = false"
               ref="inputRef"
+              class="mb-8"
             />
 
             <template v-for="(item, index) in detail.problem_list" :key="index">
@@ -131,4 +132,4 @@ const submitHandle = async () => {
 
 defineExpose({ open })
 </script>
-<style lang="scss" scope></style>
+<style lang="scss" scoped></style>

@@ -144,7 +144,7 @@ const refresh = () => {
 
 defineExpose({ open })
 </script>
-<style lang="scss" scope>
+<style lang="scss">
 .addDataset-dialog {
   padding: 0;
   .el-dialog__header {
@@ -158,7 +158,7 @@ defineExpose({ open })
   }
 
   .el-dialog__headerbtn {
-    top: 13px;
+    top: 9px;
   }
   .max-height {
     max-height: calc(100vh - 260px);
