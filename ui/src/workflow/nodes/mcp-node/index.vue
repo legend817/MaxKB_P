@@ -59,109 +59,149 @@
     <h5 class="title-decoration-1 mb-8">
       {{ $t('views.applicationWorkflow.nodes.mcpNode.toolParam') }}
     </h5>
-    <div
-      class="border-r-4 p-8-12 mb-8 layout-bg lighter"
-      v-if="form_data.tool_params[form_data.params_nested]"
-    >
-      <el-form
-        ref="dynamicsFormRef"
-        label-position="top"
-        v-loading="loading"
-        require-asterisk-position="right"
-        :hide-required-asterisk="true"
-        v-if="form_data.mcp_tool"
-        @submit.prevent
-      >
-        <el-form-item
-          v-for="item in form_data.tool_form_field" :key="item.field"
-          :required="item.required"
+    <template v-if="form_data.tool_params[form_data.params_nested]">
+      <div class="p-8-12" v-if="!form_data.mcp_tool">
+        <el-text type="info">{{ $t('common.noData') }}</el-text>
+      </div>
+      <div v-else class="border-r-4 p-8-12 mb-8 layout-bg lighter">
+        <el-form
+          ref="dynamicsFormRef"
+          label-position="top"
+          v-loading="loading"
+          require-asterisk-position="right"
+          :hide-required-asterisk="true"
+          v-if="form_data.mcp_tool"
+          @submit.prevent
         >
-          <template #label>
-            <div class="flex-between">
-              <div>
-                <TooltipLabel :label="item.label.label" :tooltip="item.label.attrs.tooltip" />
-                <span v-if="item.required" class="danger">*</span>
+          <el-form-item
+            v-for="item in form_data.tool_form_field"
+            :key="item.field"
+            :required="item.required"
+          >
+            <template #label>
+              <div class="flex-between">
+                <div>
+                  <TooltipLabel :label="item.label.label" :tooltip="item.label.attrs.tooltip" />
+                  <span v-if="item.required" class="danger">*</span>
+                </div>
+                <el-select
+                  :teleported="false"
+                  v-model="item.source"
+                  size="small"
+                  style="width: 85px"
+                  @change="form_data.tool_params[form_data.params_nested] = {}"
+                >
+                  <el-option
+                    :label="$t('views.applicationWorkflow.nodes.replyNode.replyContent.reference')"
+                    value="referencing"
+                  />
+                  <el-option
+                    :label="$t('views.applicationWorkflow.nodes.replyNode.replyContent.custom')"
+                    value="custom"
+                  />
+                </el-select>
               </div>
-              <el-select :teleported="false" v-model="item.source" size="small"
-                         style="width: 85px"
-                         @change="form_data.tool_params[form_data.params_nested] = {}">
-                <el-option
-                  :label="$t('views.applicationWorkflow.nodes.replyNode.replyContent.reference')"
-                  value="referencing"
-                />
-                <el-option
-                  :label="$t('views.applicationWorkflow.nodes.replyNode.replyContent.custom')"
-                  value="custom"
-                />
-              </el-select>
-            </div>
-          </template>
-          <el-input
-            v-if="item.source === 'custom'"
-            v-model="form_data.tool_params[form_data.params_nested][item.label.label]"
-          />
-          <NodeCascader
-            v-else
-            ref="nodeCascaderRef2"
-            :nodeModel="nodeModel"
-            class="w-full"
-            :placeholder="$t('views.applicationWorkflow.variable.placeholder')"
-            v-model="form_data.tool_params[form_data.params_nested][item.label.label]"
-          />
-        </el-form-item>
-      </el-form>
-    </div>
-    <div
-      v-else
-      class="border-r-4 p-8-12 mb-8 layout-bg lighter"
-    >
-      <el-form
-        ref="dynamicsFormRef"
-        label-position="top"
-        v-loading="loading"
-        require-asterisk-position="right"
-        :hide-required-asterisk="true"
-        v-if="form_data.mcp_tool"
-        @submit.prevent
-      >
-        <el-form-item
-          v-for="item in form_data.tool_form_field" :key="item.field"
-          :required="item.required"
+            </template>
+            <el-input
+              v-if="item.source === 'custom' && item.input_type === 'TextInput'"
+              v-model="form_data.tool_params[form_data.params_nested][item.label.label]"
+            />
+            <el-input-number
+              v-else-if="item.source === 'custom' && item.input_type === 'NumberInput'"
+              v-model="form_data.tool_params[form_data.params_nested][item.label.label]"
+            />
+            <el-switch
+              v-else-if="item.source === 'custom' && item.input_type === 'SwitchInput'"
+              v-model="form_data.tool_params[form_data.params_nested][item.label.label]"
+            />
+            <el-input
+              v-else-if="item.source === 'custom' && item.input_type === 'JsonInput'"
+              v-model="form_data.tool_params[form_data.params_nested][item.label.label]"
+              type="textarea"
+            />
+            <NodeCascader
+              v-if="item.source === 'referencing'"
+              ref="nodeCascaderRef2"
+              :nodeModel="nodeModel"
+              class="w-full"
+              :placeholder="$t('views.applicationWorkflow.variable.placeholder')"
+              v-model="form_data.tool_params[form_data.params_nested][item.label.label]"
+            />
+          </el-form-item>
+        </el-form>
+      </div>
+    </template>
+    <template v-else>
+      <div class="p-8-12"  v-if="!form_data.mcp_tool">
+        <el-text type="info">{{ $t('common.noData') }}</el-text>
+      </div>
+      <div v-else class="border-r-4 p-8-12 mb-8 layout-bg lighter">
+        <el-form
+          ref="dynamicsFormRef"
+          label-position="top"
+          v-loading="loading"
+          require-asterisk-position="right"
+          :hide-required-asterisk="true"
+          v-if="form_data.mcp_tool"
+          @submit.prevent
         >
-          <template #label>
-            <div class="flex-between">
-              <div>
-                <TooltipLabel :label="item.label.label" :tooltip="item.label.attrs.tooltip" />
-                <span v-if="item.required" class="danger">*</span>
+          <el-form-item
+            v-for="item in form_data.tool_form_field"
+            :key="item.field"
+            :required="item.required"
+          >
+            <template #label>
+              <div class="flex-between">
+                <div>
+                  <TooltipLabel :label="item.label.label" :tooltip="item.label.attrs.tooltip" />
+                  <span v-if="item.required" class="danger">*</span>
+                </div>
+                <el-select
+                  :teleported="false"
+                  v-model="item.source"
+                  size="small"
+                  style="width: 85px"
+                >
+                  <el-option
+                    :label="$t('views.applicationWorkflow.nodes.replyNode.replyContent.reference')"
+                    value="referencing"
+                  />
+                  <el-option
+                    :label="$t('views.applicationWorkflow.nodes.replyNode.replyContent.custom')"
+                    value="custom"
+                  />
+                </el-select>
               </div>
-              <el-select :teleported="false" v-model="item.source" size="small"
-                         style="width: 85px">
-                <el-option
-                  :label="$t('views.applicationWorkflow.nodes.replyNode.replyContent.reference')"
-                  value="referencing"
-                />
-                <el-option
-                  :label="$t('views.applicationWorkflow.nodes.replyNode.replyContent.custom')"
-                  value="custom"
-                />
-              </el-select>
-            </div>
-          </template>
-          <el-input
-            v-if="item.source === 'custom'"
-            v-model="form_data.tool_params[item.label.label]"
-          />
-          <NodeCascader
-            v-else
-            ref="nodeCascaderRef2"
-            :nodeModel="nodeModel"
-            class="w-full"
-            :placeholder="$t('views.applicationWorkflow.variable.placeholder')"
-            v-model="form_data.tool_params[item.label.label]"
-          />
-        </el-form-item>
-      </el-form>
-    </div>
+            </template>
+            <el-input
+              v-if="item.source === 'custom' && item.input_type === 'TextInput'"
+              v-model="form_data.tool_params[item.label.label]"
+            />
+            <el-input-number
+              v-else-if="item.source === 'custom' && item.input_type === 'NumberInput'"
+              v-model="form_data.tool_params[item.label.label]"
+            />
+            <el-switch
+              v-else-if="item.source === 'custom' && item.input_type === 'SwitchInput'"
+              v-model="form_data.tool_params[item.label.label]"
+            />
+            <el-input
+              v-else-if="item.source === 'custom' && item.input_type === 'JsonInput'"
+              v-model="form_data.tool_params[item.label.label]"
+              type="textarea"
+            />
+            <NodeCascader
+              v-if="item.source === 'referencing'"
+              ref="nodeCascaderRef2"
+              :nodeModel="nodeModel"
+              class="w-full"
+              :placeholder="$t('views.applicationWorkflow.variable.placeholder')"
+              v-model="form_data.tool_params[item.label.label]"
+            />
+          </el-form-item>
+        </el-form>
+      </div>
+    </template>
   </NodeContainer>
 </template>
 <script setup lang="ts">
@@ -244,6 +284,19 @@ function changeTool() {
     if (params) {
       form_data.value.params_nested = item
       for (const item2 in params) {
+        let input_type = 'TextInput'
+        if (params[item2].type === 'string') {
+          input_type = 'TextInput'
+        } else if (params[item2].type === 'number') {
+          input_type = 'NumberInput'
+        } else if (params[item2].type === 'boolean') {
+          input_type = 'SwitchInput'
+        } else if (params[item2].type === 'array') {
+          input_type = 'JsonInput'
+        } else if (params[item2].type === 'object') {
+          input_type = 'JsonInput'
+        }
+        console.log(params[item2])
         form_data.value.tool_form_field.push({
           field: item2,
           label: {
@@ -252,7 +305,7 @@ function changeTool() {
             attrs: { tooltip: params[item2].description },
             props_info: {}
           },
-          input_type: 'TextInput',
+          input_type: input_type,
           source: 'referencing',
           required: args_schema.properties[item].required?.indexOf(item2) !== -1,
           props_info: {
@@ -268,6 +321,19 @@ function changeTool() {
       }
     } else {
       form_data.value.params_nested = ''
+      let input_type = 'TextInput'
+      if (args_schema.properties[item].type === 'string') {
+        input_type = 'TextInput'
+      } else if (args_schema.properties[item].type === 'number') {
+        input_type = 'NumberInput'
+      } else if (args_schema.properties[item].type === 'boolean') {
+        input_type = 'SwitchInput'
+      } else if (args_schema.properties[item].type === 'array') {
+        input_type = 'JsonInput'
+      } else if (args_schema.properties[item].type === 'object') {
+        input_type = 'JsonInput'
+      }
+      console.log(args_schema.properties[item])
       form_data.value.tool_form_field.push({
         field: item,
         label: {
@@ -276,7 +342,7 @@ function changeTool() {
           attrs: { tooltip: args_schema.properties[item].description },
           props_info: {}
         },
-        input_type: 'TextInput',
+        input_type: input_type,
         source: 'referencing',
         required: args_schema.required?.indexOf(item) !== -1,
         props_info: {

@@ -3,7 +3,10 @@
     ref="aiChatRef"
     class="ai-chat"
     :class="type"
-    :style="{ height: firsUserInput ? '100%' : undefined }"
+    :style="{
+      height: firsUserInput ? '100%' : undefined,
+      paddingBottom: applicationDetails.disclaimer ? '20px' : 0
+    }"
   >
     <div
       v-show="showUserInputContent"
@@ -20,7 +23,7 @@
         ref="userFormRef"
       ></UserForm>
     </div>
-    <template v-if="!isUserInput || !firsUserInput || type === 'log'">
+    <template v-if="!(isUserInput || isAPIInput) || !firsUserInput || type === 'log'">
       <el-scrollbar ref="scrollDiv" @scroll="handleScrollTop">
         <div ref="dialogScrollbar" class="ai-chat__content p-16">
           <PrologueContent
@@ -77,7 +80,7 @@
             </slot>
 
             <el-button
-              v-if="isUserInput"
+              v-if="isUserInput || isAPIInput"
               class="user-input-button mb-8"
               type="primary"
               text
@@ -150,8 +153,9 @@ const form_data = ref<any>({})
 const api_form_data = ref<any>({})
 const userFormRef = ref<InstanceType<typeof UserForm>>()
 // 用户输入
-const firsUserInput = ref(true)
+const firsUserInput = ref(false)
 const showUserInput = ref(false)
+
 // 初始表单数据（用于恢复）
 const initialFormData = ref({})
 const initialApiFormData = ref({})
@@ -161,8 +165,17 @@ const isUserInput = computed(
     props.applicationDetails.work_flow?.nodes?.filter((v: any) => v.id === 'base-node')[0]
       .properties.user_input_field_list.length > 0
 )
+const isAPIInput = computed(
+  () =>
+    props.type === 'debug-ai-chat' &&
+    props.applicationDetails.work_flow?.nodes?.filter((v: any) => v.id === 'base-node')[0]
+      .properties.api_input_field_list.length > 0
+)
 const showUserInputContent = computed(() => {
-  return ((isUserInput.value && firsUserInput.value) || showUserInput.value) && props.type !== 'log'
+  return (
+    (((isUserInput.value || isAPIInput.value) && firsUserInput.value) || showUserInput.value) &&
+    props.type !== 'log'
+  )
 })
 watch(
   () => props.chatId,
@@ -172,10 +185,14 @@ watch(
       firsUserInput.value = false
     } else {
       chartOpenId.value = ''
-      firsUserInput.value = true
+      if (isUserInput.value) {
+        firsUserInput.value = true
+      } else if (props.type == 'debug-ai-chat' && isAPIInput.value) {
+        firsUserInput.value = true
+      }
     }
   },
-  { deep: true }
+  { deep: true, immediate: true }
 )
 
 watch(
@@ -221,33 +238,48 @@ const validate = () => {
   return userFormRef.value?.validate() || Promise.reject(false)
 }
 
-function sendMessage(val: string, other_params_data?: any, chat?: chatType) {
+function sendMessage(val: string, other_params_data?: any, chat?: chatType): Promise<boolean> {
   if (isUserInput.value) {
-    userFormRef.value
-      ?.validate()
-      .then((ok) => {
-        let userFormData = JSON.parse(localStorage.getItem(`${accessToken}userForm`) || '{}')
-        const newData = Object.keys(form_data.value).reduce((result: any, key: string) => {
-          result[key] = Object.prototype.hasOwnProperty.call(userFormData, key)
-            ? userFormData[key]
-            : form_data.value[key]
-          return result
-        }, {})
-        localStorage.setItem(`${accessToken}userForm`, JSON.stringify(newData))
-        showUserInput.value = false
-        if (!loading.value && props.applicationDetails?.name) {
-          handleDebounceClick(val, other_params_data, chat)
-        }
-      })
-      .catch((e) => {
-        showUserInput.value = true
-        return
-      })
+    if (userFormRef.value) {
+      return userFormRef.value
+        ?.validate()
+        .then((ok) => {
+          let userFormData = JSON.parse(localStorage.getItem(`${accessToken}userForm`) || '{}')
+          const newData = Object.keys(form_data.value).reduce((result: any, key: string) => {
+            result[key] = Object.prototype.hasOwnProperty.call(userFormData, key)
+              ? userFormData[key]
+              : form_data.value[key]
+            return result
+          }, {})
+          localStorage.setItem(`${accessToken}userForm`, JSON.stringify(newData))
+
+          showUserInput.value = false
+
+          if (!loading.value && props.applicationDetails?.name) {
+            handleDebounceClick(val, other_params_data, chat)
+            return true
+          }
+          throw 'err: no send'
+        })
+        .catch((e) => {
+          if (isAPIInput.value && props.type !== 'debug-ai-chat') {
+            showUserInput.value = false
+          } else {
+            showUserInput.value = true
+          }
+
+          return false
+        })
+    } else {
+      return Promise.reject(false)
+    }
   } else {
     showUserInput.value = false
     if (!loading.value && props.applicationDetails?.name) {
       handleDebounceClick(val, other_params_data, chat)
+      return Promise.resolve(true)
     }
+    return Promise.reject(false)
   }
 }
 
@@ -413,7 +445,9 @@ function chatMessage(chat?: any, problem?: string, re_chat?: boolean, other_para
             ? other_params_data.document_list
             : [],
         audio_list:
-          other_params_data && other_params_data.audio_list ? other_params_data.audio_list : []
+          other_params_data && other_params_data.audio_list ? other_params_data.audio_list : [],
+        other_list:
+          other_params_data && other_params_data.other_list ? other_params_data.other_list : []
       }
     })
     chatList.value.push(chat)

@@ -148,10 +148,12 @@ class ModelSettingSerializer(serializers.Serializer):
                                                         error_messages=ErrMessage.char(_("Thinking process switch")))
     reasoning_content_start = serializers.CharField(required=False, allow_null=True, default="<think>",
                                                     allow_blank=True, max_length=256,
+                                                    trim_whitespace=False,
                                                     error_messages=ErrMessage.char(
                                                         _("The thinking process begins to mark")))
     reasoning_content_end = serializers.CharField(required=False, allow_null=True, allow_blank=True, default="</think>",
                                                   max_length=256,
+                                                  trim_whitespace=False,
                                                   error_messages=ErrMessage.char(_("End of thinking process marker")))
 
 
@@ -162,7 +164,7 @@ class ApplicationWorkflowSerializer(serializers.Serializer):
                                  max_length=256, min_length=1,
                                  error_messages=ErrMessage.char(_("Application Description")))
     work_flow = serializers.DictField(required=False, error_messages=ErrMessage.dict(_("Workflow Objects")))
-    prologue = serializers.CharField(required=False, allow_null=True, allow_blank=True, max_length=4096,
+    prologue = serializers.CharField(required=False, allow_null=True, allow_blank=True, max_length=102400,
                                      error_messages=ErrMessage.char(_("Opening remarks")))
 
     @staticmethod
@@ -225,7 +227,7 @@ class ApplicationSerializer(serializers.Serializer):
                                                min_value=0,
                                                max_value=1024,
                                                error_messages=ErrMessage.integer(_("Historical chat records")))
-    prologue = serializers.CharField(required=False, allow_null=True, allow_blank=True, max_length=4096,
+    prologue = serializers.CharField(required=False, allow_null=True, allow_blank=True, max_length=102400,
                                      error_messages=ErrMessage.char(_("Opening remarks")))
     dataset_id_list = serializers.ListSerializer(required=False, child=serializers.UUIDField(required=True),
                                                  allow_null=True,
@@ -493,7 +495,7 @@ class ApplicationSerializer(serializers.Serializer):
                                                    min_value=0,
                                                    max_value=1024,
                                                    error_messages=ErrMessage.integer(_("Historical chat records")))
-        prologue = serializers.CharField(required=False, allow_null=True, allow_blank=True, max_length=4096,
+        prologue = serializers.CharField(required=False, allow_null=True, allow_blank=True, max_length=102400,
                                          error_messages=ErrMessage.char(_("Opening remarks")))
         dataset_id_list = serializers.ListSerializer(required=False, child=serializers.UUIDField(required=True),
                                                      error_messages=ErrMessage.list(_("Related Knowledge Base"))
@@ -1004,7 +1006,8 @@ class ApplicationSerializer(serializers.Serializer):
                  'stt_autosend': application.stt_autosend,
                  'file_upload_enable': application.file_upload_enable,
                  'file_upload_setting': application.file_upload_setting,
-                 'work_flow': application.work_flow,
+                 'work_flow': {'nodes': [node for node in ((application.work_flow or {}).get('nodes', []) or []) if
+                                         node.get('id') == 'base-node']},
                  'show_source': application_access_token.show_source,
                  'language': application_access_token.language,
                  **application_setting_dict})
@@ -1065,6 +1068,7 @@ class ApplicationSerializer(serializers.Serializer):
             for update_key in update_keys:
                 if update_key in instance and instance.get(update_key) is not None:
                     application.__setattr__(update_key, instance.get(update_key))
+            print(application.name)
             application.save()
 
             if 'dataset_id_list' in instance:
@@ -1083,6 +1087,7 @@ class ApplicationSerializer(serializers.Serializer):
                 chat_cache.clear_by_application_id(application_id)
             application_access_token = QuerySet(ApplicationAccessToken).filter(application_id=application_id).first()
             # 更新缓存数据
+            print(application.name)
             get_application_access_token(application_access_token.access_token, False)
             return self.one(with_valid=False)
 
@@ -1135,6 +1140,8 @@ class ApplicationSerializer(serializers.Serializer):
                         instance['file_upload_enable'] = node_data['file_upload_enable']
                     if 'file_upload_setting' in node_data:
                         instance['file_upload_setting'] = node_data['file_upload_setting']
+                    if 'name' in node_data:
+                        instance['name'] = node_data['name']
                     break
 
         def speech_to_text(self, file, with_valid=True):

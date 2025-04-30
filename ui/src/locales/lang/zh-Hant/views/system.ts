@@ -1,5 +1,6 @@
 export default {
-  title: '系統設置',
+  title: '系統管理',
+  subTitle: '系統設置',
   test: '測試連線',
   testSuccess: '測試連線成功',
   testFailed: '測試連線失敗',
@@ -122,7 +123,7 @@ export default {
     websiteSloganPlaceholder: '請輸入歡迎語',
     websiteSloganTip: '產品 Logo 下的歡迎語',
     logoDefaultTip: '默认为 MaxKB 登錄界面，支持自定义设置',
-    defaultSlogan: '歡迎使用 MaxKB 智能知識庫問答系統',
+    defaultSlogan: '歡迎使用 MaxKB 開源 AI 助手',
     defaultTip: '默認為 MaxKB 平台界面，支持自定義設置',
     platformSetting: '平台設置',
     showUserManual: '顯示用戶手冊',
